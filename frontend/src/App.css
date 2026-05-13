@@ -1,0 +1,6 @@
+/* Resetting App.css as everything is managed in index.css */
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
