@@ -1,15 +1,19 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getEventById } from "../../api/eventApi";
-import { Calendar, MapPin, Users, Clock, MessageSquare, ArrowLeft, Share2, ShieldCheck, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Calendar, MapPin, Users, Clock, MessageSquare, ArrowLeft, Share2, ShieldCheck, Loader2, Ticket, Banknote } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import { useAuth } from "../../context/AuthContext";
+import BookingModal from "../../components/booking/BookingModal";
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   useEffect(() => {
     fetchEvent();
@@ -135,12 +139,35 @@ const EventDetails = () => {
                   <div className="font-semibold">{event.capacity || "Unlimited"} spots available</div>
                 </div>
               </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Banknote className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm text-slate-400">Price</div>
+                  <div className="font-bold text-2xl text-white">₹{event.price || 499}</div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3">
               <button 
+                onClick={() => {
+                  if (!user) {
+                    toast.error("Please login to book tickets");
+                    navigate("/login");
+                    return;
+                  }
+                  setIsBookingModalOpen(true);
+                }}
+                className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 group shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Ticket className="w-5 h-5" />
+                Book Ticket
+              </button>
+              <button 
                 onClick={() => navigate(`/feedback/submit/${event.id}`)}
-                className="w-full btn-primary py-4 flex items-center justify-center gap-2 group"
+                className="w-full btn-outline py-4 flex items-center justify-center gap-2 group"
               >
                 <MessageSquare className="w-5 h-5" />
                 Give Feedback
@@ -156,7 +183,16 @@ const EventDetails = () => {
             </p>
           </motion.div>
         </div>
-      </div>
+      <AnimatePresence>
+        {isBookingModalOpen && (
+          <BookingModal 
+            event={event} 
+            user={user} 
+            isOpen={isBookingModalOpen} 
+            onClose={() => setIsBookingModalOpen(false)} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

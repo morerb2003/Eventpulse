@@ -48,4 +48,8 @@ public class Event extends AuditEntity {
     /** Pre-generated QR image stored as Base64 data-URI */
     @Column(columnDefinition = "TEXT")
     private String qrCodeBase64;
+
+    private Double price;
+
+    private Integer availableSeats;
 }

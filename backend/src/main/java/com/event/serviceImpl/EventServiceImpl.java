@@ -9,6 +9,7 @@ import com.event.service.EventService;
 import com.event.service.FileService;
 import com.event.entity.User;
 import com.event.repository.UserRepository;
+import com.event.service.SeatService;
 import com.event.util.QRCodeGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -28,16 +29,19 @@ public class EventServiceImpl implements EventService {
     private final FileService fileService;
     private final UserRepository userRepository;
     private final QRCodeGenerator qrCodeGenerator;
+    private final SeatService seatService;
 
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     public EventServiceImpl(EventRepository eventRepository, FileService fileService,
-                            UserRepository userRepository, QRCodeGenerator qrCodeGenerator) {
+                            UserRepository userRepository, QRCodeGenerator qrCodeGenerator,
+                            SeatService seatService) {
         this.eventRepository = eventRepository;
         this.fileService = fileService;
         this.userRepository = userRepository;
         this.qrCodeGenerator = qrCodeGenerator;
+        this.seatService = seatService;
     }
 
     @Override
@@ -71,6 +75,8 @@ public class EventServiceImpl implements EventService {
                 .date(eventDto.getDate())
                 .category(eventDto.getCategory())
                 .capacity(eventDto.getCapacity())
+                .availableSeats(eventDto.getCapacity())
+                .price(eventDto.getPrice())
                 .startTime(eventDto.getStartTime())
                 .posterUrl(posterUrl)
                 .creator(creator)
@@ -79,6 +85,7 @@ public class EventServiceImpl implements EventService {
                 .build();
         
         Event savedEvent = eventRepository.save(event);
+        seatService.initializeSeats(savedEvent);
         return mapToDto(savedEvent);
     }
 
@@ -105,6 +112,7 @@ public class EventServiceImpl implements EventService {
         event.setDate(eventDto.getDate());
         event.setCategory(eventDto.getCategory());
         event.setCapacity(eventDto.getCapacity());
+        event.setPrice(eventDto.getPrice());
         event.setStartTime(eventDto.getStartTime());
         
         Event updatedEvent = eventRepository.save(event);
@@ -164,6 +172,8 @@ public class EventServiceImpl implements EventService {
                 .startTime(event.getStartTime())
                 .qrToken(event.getQrToken())
                 .qrCodeBase64(event.getQrCodeBase64())
+                .price(event.getPrice())
+                .availableSeats(event.getAvailableSeats())
                 .build();
     }
 }

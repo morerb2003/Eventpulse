@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createEvent } from "../../api/eventApi";
-import { Calendar, MapPin, Type, AlignLeft, Image as ImageIcon, Users, Save, X, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Type, AlignLeft, Image as ImageIcon, Users, Save, X, Loader2, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -17,7 +17,8 @@ const CreateEvent = () => {
     location: "",
     date: "",
     category: "Technology",
-    capacity: 100
+    capacity: 100,
+    price: 499
   });
 
   const handleInputChange = (e) => {
@@ -122,7 +123,21 @@ const CreateEvent = () => {
                 onChange={handleInputChange}
               />
             </div>
+            <div className="space-y-4">
+            <label className="text-sm font-medium text-slate-400 block ml-1">Price (INR)</label>
+            <div className="relative">
+              <Banknote className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input 
+                type="number" 
+                name="price"
+                className="input-field pl-11"
+                placeholder="499"
+                value={eventData.price}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
+        </div>
         </div>
 
         {/* Right Column: Main Details */}

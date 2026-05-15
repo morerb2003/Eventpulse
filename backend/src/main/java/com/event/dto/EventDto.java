@@ -28,4 +28,6 @@ public class EventDto {
     private LocalDateTime startTime;
     private String qrToken;
     private String qrCodeBase64;
+    private Double price;
+    private Integer availableSeats;
 }
