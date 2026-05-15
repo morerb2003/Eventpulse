@@ -10,6 +10,7 @@ import com.event.repository.FeedbackRepository;
 import com.event.repository.UserRepository;
 import com.event.service.EmailService;
 import com.event.service.FeedbackService;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -23,6 +24,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // Production innovation: Spam Keywords
     private static final List<String> SPAM_KEYWORDS = Arrays.asList("win free", "click here", "buy now", "subscribe", "crypto", "cheap");
@@ -30,11 +32,13 @@ public class FeedbackServiceImpl implements FeedbackService {
     public FeedbackServiceImpl(FeedbackRepository feedbackRepository, 
                                EventRepository eventRepository, 
                                UserRepository userRepository,
-                               EmailService emailService) {
+                               EmailService emailService,
+                               SimpMessagingTemplate messagingTemplate) {
         this.feedbackRepository = feedbackRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Override
@@ -68,6 +72,9 @@ public class FeedbackServiceImpl implements FeedbackService {
         if (user != null) {
             emailService.sendFeedbackConfirmation(user.getEmail(), user.getFirstName(), event.getTitle());
         }
+
+        // Real-time Notification
+        messagingTemplate.convertAndSend("/topic/feedback", "New feedback submitted for event: " + event.getTitle());
         
         return mapToDto(savedFeedback);
     }

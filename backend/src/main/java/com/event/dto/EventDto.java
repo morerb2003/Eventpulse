@@ -26,4 +26,6 @@ public class EventDto {
     private String posterUrl;
     private Integer capacity;
     private LocalDateTime startTime;
+    private String qrToken;
+    private String qrCodeBase64;
 }

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { getAllEvents } from "../../api/eventApi";
 import { getGlobalStats } from "../../api/analyticsApi";
 import { Calendar, Users, MessageSquare, Plus, QrCode, BarChart3, Search, Trash2, Edit, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRModal from "../../components/event/QRModal";
+import NotificationPanel from "../../components/notifications/NotificationPanel";
 import toast from "react-hot-toast";
 
 const AdminDashboard = () => {
@@ -13,11 +14,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedQR, setSelectedQR] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [eventsData, statsData] = await Promise.all([
         getAllEvents(0, 5, "id", "desc"),
@@ -30,7 +27,11 @@ const AdminDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -39,9 +40,12 @@ const AdminDashboard = () => {
           <h1 className="text-3xl font-bold">Admin Dashboard</h1>
           <p className="text-slate-400 mt-1">Monitor event performance and engagement.</p>
         </div>
-        <Link to="/admin/events/new" className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Create New Event
-        </Link>
+        <div className="flex items-center gap-3">
+          <NotificationPanel onNewFeedback={fetchData} />
+          <Link to="/admin/events/new" className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Create New Event
+          </Link>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -164,6 +168,7 @@ const AdminDashboard = () => {
         <QRModal 
           eventId={selectedQR.id} 
           eventTitle={selectedQR.title} 
+          qrCodeBase64={selectedQR.qrCodeBase64}
           onClose={() => setSelectedQR(null)} 
         />
       )}

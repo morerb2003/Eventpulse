@@ -9,6 +9,8 @@ import com.event.service.EventService;
 import com.event.service.FileService;
 import com.event.entity.User;
 import com.event.repository.UserRepository;
+import com.event.util.QRCodeGenerator;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,11 +27,17 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final FileService fileService;
     private final UserRepository userRepository;
+    private final QRCodeGenerator qrCodeGenerator;
 
-    public EventServiceImpl(EventRepository eventRepository, FileService fileService, UserRepository userRepository) {
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
+
+    public EventServiceImpl(EventRepository eventRepository, FileService fileService,
+                            UserRepository userRepository, QRCodeGenerator qrCodeGenerator) {
         this.eventRepository = eventRepository;
         this.fileService = fileService;
         this.userRepository = userRepository;
+        this.qrCodeGenerator = qrCodeGenerator;
     }
 
     @Override
@@ -51,6 +59,11 @@ public class EventServiceImpl implements EventService {
             creator = (User) authentication.getPrincipal();
         }
 
+        // Generate QR token & check-in URL
+        String qrToken = qrCodeGenerator.generateToken();
+        String checkInUrl = frontendUrl + "/checkin/" + qrToken;
+        String qrCodeBase64 = qrCodeGenerator.generateQRCodeBase64(checkInUrl);
+
         Event event = Event.builder()
                 .title(eventDto.getTitle())
                 .description(eventDto.getDescription())
@@ -61,6 +74,8 @@ public class EventServiceImpl implements EventService {
                 .startTime(eventDto.getStartTime())
                 .posterUrl(posterUrl)
                 .creator(creator)
+                .qrToken(qrToken)
+                .qrCodeBase64(qrCodeBase64)
                 .build();
         
         Event savedEvent = eventRepository.save(event);
@@ -147,6 +162,8 @@ public class EventServiceImpl implements EventService {
                 .posterUrl(event.getPosterUrl())
                 .capacity(event.getCapacity())
                 .startTime(event.getStartTime())
+                .qrToken(event.getQrToken())
+                .qrCodeBase64(event.getQrCodeBase64())
                 .build();
     }
 }

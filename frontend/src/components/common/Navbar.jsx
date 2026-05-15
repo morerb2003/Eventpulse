@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { LogOut, User, LayoutDashboard, Calendar, Home } from "lucide-react";
+import NotificationPanel from "../notifications/NotificationPanel";
 
 const Navbar = () => {
   const { user, logout, isAdmin } = useAuth();
@@ -40,7 +41,8 @@ const Navbar = () => {
 
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {isAdmin() && <NotificationPanel />}
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/10">
                   <User className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">{user.firstName}</span>

@@ -40,4 +40,12 @@ public class Event extends AuditEntity {
     private Integer capacity;
 
     private LocalDateTime startTime;
+
+    /** Unique token embedded in the check-in QR code URL */
+    @Column(unique = true)
+    private String qrToken;
+
+    /** Pre-generated QR image stored as Base64 data-URI */
+    @Column(columnDefinition = "TEXT")
+    private String qrCodeBase64;
 }

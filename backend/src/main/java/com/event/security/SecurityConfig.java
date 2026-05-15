@@ -39,12 +39,17 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 // Public - Swagger
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", "/swagger-ui.html").permitAll()
+                // Public - WebSocket (SockJS handshake)
+                .requestMatchers("/ws/**").permitAll()
                 // Public - Events (read-only)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
                 // Public - File serving
                 .requestMatchers("/api/files/**").permitAll()
                 // Public - Feedback submission (POST allowed for authenticated users handled at service layer)
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/feedback").permitAll()
+                // Public - Attendance check-in
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/attendance/*/checkin").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/attendance/checkin-by-token").permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )

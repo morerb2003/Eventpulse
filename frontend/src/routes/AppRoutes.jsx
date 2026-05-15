@@ -8,6 +8,7 @@ import About from "../pages/public/About";
 import Contact from "../pages/public/Contact";
 import EventDetails from "../pages/public/EventDetails";
 import SubmitFeedback from "../pages/feedback/SubmitFeedback";
+import CheckIn from "../pages/public/CheckIn";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 import AdminDashboard from "../pages/dashboard/AdminDashboard";
 import UserDashboard from "../pages/dashboard/UserDashboard";
@@ -28,6 +29,7 @@ const AppRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/feedback/submit/:eventId" element={<SubmitFeedback />} />
+        <Route path="/checkin/:token" element={<CheckIn />} />
         
         {/* User Routes */}
         <Route element={<ProtectedRoute allowedRoles={[ROLES.USER, ROLES.ADMIN, ROLES.ORGANIZER]} />}>
