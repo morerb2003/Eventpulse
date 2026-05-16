@@ -1,15 +1,17 @@
 package com.event.controller;
 
+import com.event.entity.Booking;
 import com.event.entity.Event;
 import com.event.entity.User;
+import com.event.repository.BookingRepository;
 import com.event.repository.EventRepository;
-import com.event.repository.UserRepository;
 import com.event.service.CertificateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
@@ -21,19 +23,19 @@ public class CertificateController {
 
     private final CertificateService certificateService;
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
-    @GetMapping("/download/{eventId}/{userId}")
+    @GetMapping("/download/{eventId}")
     public ResponseEntity<InputStreamResource> downloadCertificate(
             @PathVariable Long eventId,
-            @PathVariable Long userId) {
+            @AuthenticationPrincipal User user) {
         
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Here we could add a check if the user actually attended/paid for the event
+        // Validate that the user has a completed booking for this event
+        bookingRepository.findByEvent_IdAndUser_IdAndPaymentStatus(eventId, user.getId(), "COMPLETED")
+                .orElseThrow(() -> new RuntimeException("You have not booked or completed payment for this event."));
         
         ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
 

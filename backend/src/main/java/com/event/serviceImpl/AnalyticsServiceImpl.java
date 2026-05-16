@@ -4,6 +4,7 @@ import com.event.dto.EventAnalyticsDto;
 import com.event.entity.Event;
 import com.event.entity.Feedback;
 import com.event.exception.ResourceNotFoundException;
+import com.event.repository.BookingRepository;
 import com.event.repository.EventRepository;
 import com.event.repository.FeedbackRepository;
 import com.event.repository.UserRepository;
@@ -21,11 +22,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final EventRepository eventRepository;
     private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
-    public AnalyticsServiceImpl(EventRepository eventRepository, FeedbackRepository feedbackRepository, UserRepository userRepository) {
+    public AnalyticsServiceImpl(EventRepository eventRepository, FeedbackRepository feedbackRepository, 
+                                UserRepository userRepository, BookingRepository bookingRepository) {
         this.eventRepository = eventRepository;
         this.feedbackRepository = feedbackRepository;
         this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
@@ -48,6 +52,13 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .filter(f -> f.getSentiment() != null)
                 .collect(Collectors.groupingBy(Feedback::getSentiment, Collectors.counting()));
 
+        List<com.event.entity.Booking> bookings = bookingRepository.findByEventId(eventId);
+        long totalBookings = bookings.stream().filter(b -> "COMPLETED".equals(b.getPaymentStatus())).count();
+        double totalRevenue = bookings.stream()
+                .filter(b -> "COMPLETED".equals(b.getPaymentStatus()))
+                .mapToDouble(com.event.entity.Booking::getAmount)
+                .sum();
+
         return EventAnalyticsDto.builder()
                 .eventId(eventId)
                 .eventTitle(event.getTitle())
@@ -55,6 +66,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .averageRating(averageRating)
                 .ratingDistribution(ratingDistribution)
                 .sentimentDistribution(sentimentDistribution)
+                .totalBookings(totalBookings)
+                .totalRevenue(totalRevenue)
                 .build();
     }
 
@@ -64,6 +77,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         stats.put("totalEvents", eventRepository.count());
         stats.put("totalUsers", userRepository.count());
         stats.put("totalFeedbacks", feedbackRepository.count());
+        
+        double globalRevenue = bookingRepository.findAll().stream()
+                .filter(b -> "COMPLETED".equals(b.getPaymentStatus()))
+                .mapToDouble(com.event.entity.Booking::getAmount)
+                .sum();
+        stats.put("totalRevenue", globalRevenue);
         return stats;
     }
 }

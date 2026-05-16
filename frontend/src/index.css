@@ -2,17 +2,23 @@
 
 @theme {
   --color-primary: #0ea5e9;
+  --color-primary-dark: #0284c7;
   --color-secondary: #6366f1;
   --color-accent: #f43f5e;
   --color-background: #0f172a;
   --color-surface: #1e293b;
+  --color-surface-hover: #334155;
   
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+  
+  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-primary-glow: 0 0 20px rgba(14, 165, 233, 0.2);
 }
 
 @layer base {
   body {
-    @apply bg-background text-slate-100 font-sans antialiased;
+    @apply bg-background text-slate-100 font-sans antialiased selection:bg-primary/30 selection:text-white;
+    background-image: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -20,55 +26,61 @@
   }
 }
 
+@utility glass {
+  @apply bg-white/[0.04] backdrop-blur-2xl border border-white/10;
+}
+
+@utility glass-dark {
+  @apply bg-black/40 backdrop-blur-xl border border-white/5;
+}
+
 @layer components {
-  /* Defining glass effect as a standard CSS class to avoid @apply recursion issues */
-  .glass {
-    background-color: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
   .btn-primary {
-    @apply px-6 py-2.5 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/20;
+    @apply px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-primary/20 hover:shadow-primary/40 flex items-center justify-center gap-2;
   }
 
   .btn-outline {
-    @apply px-6 py-2.5 border-2 border-primary/50 hover:border-primary text-primary hover:bg-primary/10 font-semibold rounded-lg transition-all duration-200;
+    @apply px-6 py-3 border border-white/10 hover:border-primary/50 bg-white/5 hover:bg-primary/5 text-white font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-slate-500;
+    @apply w-full px-5 py-4 bg-slate-900/40 border border-white/5 rounded-2xl focus:border-primary/50 focus:ring-4 focus:ring-primary/10 outline-none transition-all placeholder:text-slate-500 text-white;
   }
 
   .card {
-    @apply p-6 rounded-2xl transition-all duration-300;
-    /* Manually applying glass styles here to avoid the 'unknown utility' error */
-    background-color: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    @apply p-8 rounded-[2rem] glass transition-all duration-500 hover:border-primary/30 hover:shadow-premium hover:shadow-primary/5 hover:-translate-y-1;
   }
 
-  .card:hover {
-    border-color: rgba(14, 165, 233, 0.3);
+  .badge {
+    @apply px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest;
   }
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: #0f172a;
+  @apply bg-background;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #334155;
-  border-radius: 9999px;
+  @apply bg-slate-800 rounded-full border-2 border-background hover:bg-slate-700 transition-colors;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: #475569;
+/* Glass Tabs */
+.tab-active {
+  @apply text-primary relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:rounded-full;
 }

@@ -25,12 +25,17 @@ public class BookingController {
             Long eventId = Long.parseLong(request.get("eventId").toString());
             Long userId = Long.parseLong(request.get("userId").toString());
             Long seatId = Long.parseLong(request.get("seatId").toString());
-            String gateway = request.get("gateway").toString();
+            Object gatewayObj = request.get("gateway");
+            if (gatewayObj == null) {
+                return ResponseEntity.badRequest().body("Payment gateway not specified.");
+            }
+            String gateway = gatewayObj.toString();
 
             Booking booking = bookingService.initiateBooking(eventId, userId, seatId, gateway);
             return ResponseEntity.ok(booking);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "An unexpected error occurred"));
         }
     }
 

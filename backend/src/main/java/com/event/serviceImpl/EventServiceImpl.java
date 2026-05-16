@@ -75,8 +75,8 @@ public class EventServiceImpl implements EventService {
                 .date(eventDto.getDate())
                 .category(eventDto.getCategory())
                 .capacity(eventDto.getCapacity())
-                .availableSeats(eventDto.getCapacity())
-                .price(eventDto.getPrice())
+                .availableSeats(eventDto.getCapacity() != null ? eventDto.getCapacity() : 0)
+                .price(eventDto.getPrice() != null ? eventDto.getPrice() : 0.0)
                 .startTime(eventDto.getStartTime())
                 .posterUrl(posterUrl)
                 .creator(creator)
@@ -106,12 +106,19 @@ public class EventServiceImpl implements EventService {
             }
         }
 
+        event.setCategory(eventDto.getCategory());
         event.setTitle(eventDto.getTitle());
         event.setDescription(eventDto.getDescription());
         event.setLocation(eventDto.getLocation());
         event.setDate(eventDto.getDate());
-        event.setCategory(eventDto.getCategory());
-        event.setCapacity(eventDto.getCapacity());
+        
+        // If capacity increased, we might need to add seats, but for now let's just update the count
+        if (eventDto.getCapacity() != null && !eventDto.getCapacity().equals(event.getCapacity())) {
+            int diff = eventDto.getCapacity() - (event.getCapacity() != null ? event.getCapacity() : 0);
+            event.setAvailableSeats((event.getAvailableSeats() != null ? event.getAvailableSeats() : 0) + diff);
+            event.setCapacity(eventDto.getCapacity());
+        }
+        
         event.setPrice(eventDto.getPrice());
         event.setStartTime(eventDto.getStartTime());
         

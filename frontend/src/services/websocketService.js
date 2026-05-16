@@ -1,6 +1,7 @@
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import toast from 'react-hot-toast';
+import { BASE_URL } from '../utils/constants';
 
 class WebSocketService {
     constructor() {
@@ -8,7 +9,7 @@ class WebSocketService {
     }
 
     connect(onMessageReceived) {
-        const socket = new SockJS('http://localhost:8080/ws');
+        const socket = new SockJS(`${BASE_URL}/ws`);
         this.client = new Client({
             webSocketFactory: () => socket,
             onConnect: () => {

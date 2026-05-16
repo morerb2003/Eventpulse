@@ -2,6 +2,7 @@ package com.event.serviceImpl;
 
 import com.event.entity.Event;
 import com.event.entity.Seat;
+import com.event.repository.EventRepository;
 import com.event.repository.SeatRepository;
 import com.event.service.SeatService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 public class SeatServiceImpl implements SeatService {
 
     private final SeatRepository seatRepository;
+    private final EventRepository eventRepository;
 
     @Override
     public void initializeSeats(Event event) {
@@ -39,6 +41,13 @@ public class SeatServiceImpl implements SeatService {
 
     @Override
     public List<Seat> getSeatsByEvent(Long eventId) {
-        return seatRepository.findByEventId(eventId);
+        List<Seat> seats = seatRepository.findByEventId(eventId);
+        if (seats.isEmpty()) {
+            Event event = eventRepository.findById(eventId)
+                    .orElseThrow(() -> new RuntimeException("Event not found"));
+            initializeSeats(event);
+            return seatRepository.findByEventId(eventId);
+        }
+        return seats;
     }
 }

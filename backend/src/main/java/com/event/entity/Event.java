@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Event extends AuditEntity {
 
     @Id
@@ -30,6 +31,7 @@ public class Event extends AuditEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User creator;
 
     @Column(nullable = false)

@@ -38,15 +38,27 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Order createRazorpayOrder(Double amount) throws RazorpayException {
+        if (razorpayKeyId == null || razorpayKeyId.isEmpty() || razorpayKeyId.contains("your_key")) {
+            throw new RuntimeException("Razorpay keys are not configured. Please add them to application.properties.");
+        }
         JSONObject orderRequest = new JSONObject();
         orderRequest.put("amount", (int)(amount * 100)); // Amount in paise
         orderRequest.put("currency", "INR");
         orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
+        
+        JSONObject notes = new JSONObject();
+        notes.put("app_name", "EventPulse");
+        notes.put("payment_purpose", "Event Ticket Booking");
+        orderRequest.put("notes", notes);
+        
         return razorpayClient.orders.create(orderRequest);
     }
 
     @Override
     public Session createStripeSession(Booking booking, String successUrl, String cancelUrl) throws StripeException {
+        if (Stripe.apiKey == null || Stripe.apiKey.isEmpty()) {
+            throw new RuntimeException("Stripe API key is not configured. Please add it to application.properties.");
+        }
         SessionCreateParams params = SessionCreateParams.builder()
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .setMode(SessionCreateParams.Mode.PAYMENT)

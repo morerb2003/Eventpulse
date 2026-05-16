@@ -18,4 +18,6 @@ public class EventAnalyticsDto {
     private double averageRating;
     private Map<Integer, Long> ratingDistribution;
     private Map<String, Long> sentimentDistribution;
+    private long totalBookings;
+    private double totalRevenue;
 }
