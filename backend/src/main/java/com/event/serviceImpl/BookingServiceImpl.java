@@ -9,6 +9,8 @@ import com.event.repository.EventRepository;
 import com.event.repository.SeatRepository;
 import com.event.repository.UserRepository;
 import com.event.service.BookingService;
+import com.event.service.CertificateService;
+import com.event.service.EmailService;
 import com.event.service.PaymentService;
 import com.razorpay.Order;
 import com.razorpay.RazorpayException;
@@ -30,6 +32,8 @@ public class BookingServiceImpl implements BookingService {
     private final SeatRepository seatRepository;
     private final UserRepository userRepository;
     private final PaymentService paymentService;
+    private final EmailService emailService;
+    private final CertificateService certificateService;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend-url}")
     private String frontendUrl;
@@ -136,6 +140,25 @@ public class BookingServiceImpl implements BookingService {
         if (event.getAvailableSeats() > 0) {
             event.setAvailableSeats(event.getAvailableSeats() - 1);
             eventRepository.save(event);
+        }
+
+        try {
+            byte[] pdfBytes = null;
+            if (certificateService != null) {
+                User user = booking.getUser();
+                java.io.ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
+                pdfBytes = bis.readAllBytes();
+            }
+
+            emailService.sendEventNotification(
+                booking.getUser().getEmail(), 
+                booking.getUser().getFirstName(), 
+                event.getTitle(), 
+                event.getDate() != null ? event.getDate().toString() : "TBA",
+                pdfBytes
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send event notification email: " + e.getMessage());
         }
 
         return bookingRepository.save(booking);

@@ -32,9 +32,13 @@ const Navbar = () => {
   ];
 
   if (user) {
+    let dashboardPath = "/user/dashboard";
+    if (user.role === "ADMIN") dashboardPath = "/admin/dashboard";
+    else if (user.role === "ORGANIZER") dashboardPath = "/organizer/dashboard";
+
     navLinks.push({ 
       name: "Dashboard", 
-      path: isAdmin() ? "/admin/dashboard" : "/user/dashboard", 
+      path: dashboardPath, 
       icon: <LayoutDashboard className="w-4 h-4" /> 
     });
   }

@@ -6,7 +6,7 @@ export const getUserBookings = async (userId) => {
 };
 
 export const downloadCertificate = async (eventId, userId) => {
-    const response = await api.get(`/certificates/download/${eventId}/${userId}`, {
+    const response = await api.get(`/certificates/download/${eventId}`, {
         responseType: 'blob'
     });
     

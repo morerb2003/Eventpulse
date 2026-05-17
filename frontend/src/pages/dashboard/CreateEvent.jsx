@@ -41,7 +41,7 @@ const CreateEvent = () => {
     try {
       await createEvent(eventData, poster);
       toast.success("Event created successfully!");
-      navigate("/admin/dashboard");
+      navigate("/organizer/dashboard");
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to create event");
     } finally {
@@ -63,7 +63,7 @@ const CreateEvent = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-white/5 pb-12">
           <div>
             <button 
-              onClick={() => navigate("/admin/dashboard")}
+              onClick={() => navigate("/organizer/dashboard")}
               className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors text-xs font-black uppercase tracking-widest mb-6 group"
             >
               <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
@@ -238,7 +238,7 @@ const CreateEvent = () => {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button 
                 type="button"
-                onClick={() => navigate("/admin/dashboard")}
+                onClick={() => navigate("/organizer/dashboard")}
                 className="flex-1 btn-outline py-5 text-sm font-black tracking-widest border-white/5 bg-white/5"
               >
                 Discard Changes

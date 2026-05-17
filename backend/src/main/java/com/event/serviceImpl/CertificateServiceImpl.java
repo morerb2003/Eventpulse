@@ -12,6 +12,7 @@ import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 
 @Service
 public class CertificateServiceImpl implements CertificateService {
@@ -64,7 +65,23 @@ public class CertificateServiceImpl implements CertificateService {
             content.setLeading(20f);
             document.add(content);
 
-            document.add(new Paragraph("\n\n\n"));
+            document.add(new Paragraph("\n\n"));
+
+            // Add QR Code if present
+            if (event.getQrCodeBase64() != null && event.getQrCodeBase64().contains(",")) {
+                try {
+                    String base64Image = event.getQrCodeBase64().split(",")[1];
+                    byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                    Image qrImage = Image.getInstance(imageBytes);
+                    qrImage.scaleToFit(80, 80);
+                    qrImage.setAlignment(Element.ALIGN_CENTER);
+                    document.add(qrImage);
+                } catch (Exception e) {
+                    System.err.println("Failed to embed QR Code in PDF: " + e.getMessage());
+                }
+            } else {
+                document.add(new Paragraph("\n\n\n"));
+            }
 
             // Signatures Placeholder
             Paragraph signatures = new Paragraph("__________________________          __________________________", textFont);

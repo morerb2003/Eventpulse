@@ -8,7 +8,7 @@ import QRModal from "../../components/event/QRModal";
 import NotificationPanel from "../../components/notifications/NotificationPanel";
 import toast from "react-hot-toast";
 
-const AdminDashboard = () => {
+const OrganizerDashboard = () => {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({ totalEvents: 0, totalUsers: 0, totalFeedbacks: 0 });
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl font-black text-white tracking-tighter"
           >
-            Admin Dashboard
+            Organizer Dashboard
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 10 }}
@@ -61,7 +61,7 @@ const AdminDashboard = () => {
             transition={{ delay: 0.1 }}
             className="text-slate-500 mt-4 text-lg font-medium"
           >
-            Real-time insights and global platform analytics.
+            Manage your events and track attendee feedback.
           </motion.p>
         </div>
         <motion.div 
@@ -70,8 +70,8 @@ const AdminDashboard = () => {
           className="flex items-center gap-4"
         >
           <NotificationPanel onNewFeedback={fetchData} />
-          <Link to="/admin/users" className="btn-primary py-4 px-8 shadow-2xl shadow-primary/30">
-            <Users className="w-5 h-5" /> Manage Users
+          <Link to="/organizer/events/new" className="btn-primary py-4 px-8 shadow-2xl shadow-primary/30">
+            <Plus className="w-5 h-5" /> New Event
           </Link>
         </motion.div>
       </div>
@@ -176,6 +176,8 @@ const AdminDashboard = () => {
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                           <Link title="Analytics" to={`/admin/analytics/${event.id}`} className="p-3 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"><BarChart3 className="w-5 h-5" /></Link>
+                          <button title="Edit" className="p-3 hover:text-secondary hover:bg-secondary/10 rounded-xl transition-all"><Edit className="w-5 h-5" /></button>
+                          <button title="Delete" className="p-3 hover:text-accent hover:bg-accent/10 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
                         </div>
                       </td>
                     </motion.tr>
@@ -302,4 +304,4 @@ const ProgressItem = ({ label, value, color }) => {
   );
 };
 
-export default AdminDashboard;
+export default OrganizerDashboard;

@@ -11,6 +11,7 @@ import SubmitFeedback from "../pages/feedback/SubmitFeedback";
 import CheckIn from "../pages/public/CheckIn";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 import AdminDashboard from "../pages/dashboard/AdminDashboard";
+import OrganizerDashboard from "../pages/dashboard/OrganizerDashboard";
 import UserDashboard from "../pages/dashboard/UserDashboard";
 import ManageUsers from "../pages/dashboard/ManageUsers";
 import Analytics from "../pages/dashboard/Analytics";
@@ -36,12 +37,21 @@ const AppRoutes = () => {
           <Route path="/user/dashboard" element={<UserDashboard />} />
         </Route>
 
+        {/* Organizer Routes */}
+        <Route element={<ProtectedRoute allowedRoles={[ROLES.ORGANIZER, ROLES.ADMIN]} />}>
+          <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/organizer/events/new" element={<CreateEvent />} />
+        </Route>
+
+        {/* Shared Analytics Route */}
+        <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.ORGANIZER]} />}>
+          <Route path="/admin/analytics/:eventId" element={<Analytics />} />
+        </Route>
+
         {/* Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<ManageUsers />} />
-          <Route path="/admin/analytics/:eventId" element={<Analytics />} />
-          <Route path="/admin/events/new" element={<CreateEvent />} />
         </Route>
       </Route>
     </Routes>

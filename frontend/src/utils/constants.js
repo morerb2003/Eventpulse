@@ -8,6 +8,7 @@ export const APP_ROUTES = {
   EVENTS: "/events",
   SUBMIT_FEEDBACK: "/feedback/submit/:eventId",
   ADMIN_DASHBOARD: "/admin/dashboard",
+  ORGANIZER_DASHBOARD: "/organizer/dashboard",
   USER_DASHBOARD: "/user/dashboard",
   ANALYTICS: "/admin/analytics",
 };
