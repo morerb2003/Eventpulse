@@ -1,5 +1,7 @@
 backend/src/main/resources/application.properties
 
+*.log
 target/
 node_modules/
 .env
+uploads/
