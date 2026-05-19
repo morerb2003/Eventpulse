@@ -6,12 +6,28 @@ import { Calendar, Users, MessageSquare, QrCode, BarChart3, Search, ChevronRight
 import { Link } from "react-router-dom";
 import QRModal from "../../components/event/QRModal";
 import NotificationPanel from "../../components/notifications/NotificationPanel";
+import StatDetailModal from "../../components/dashboard/StatDetailModal";
 import toast from "react-hot-toast";
 
 const AdminDashboard = () => {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({ totalEvents: 0, totalUsers: 0, totalFeedbacks: 0 });
   const [selectedQR, setSelectedQR] = useState(null);
+  const [activeModal, setActiveModal] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  const filteredEvents = events
+    .filter(event => 
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      event.location.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
 
   const fetchData = useCallback(async () => {
     try {
@@ -81,6 +97,7 @@ const AdminDashboard = () => {
           value={stats.totalEvents}
           trend="+2 This Month"
           color="primary"
+          onClick={() => setActiveModal('events')}
         />
         <StatCard 
           icon={<Users className="text-secondary w-6 h-6" />}
@@ -88,6 +105,7 @@ const AdminDashboard = () => {
           value={stats.totalUsers}
           trend="+12% Retention"
           color="secondary"
+          onClick={() => setActiveModal('users')}
         />
         <StatCard 
           icon={<MessageSquare className="text-accent w-6 h-6" />}
@@ -95,6 +113,7 @@ const AdminDashboard = () => {
           value={stats.totalFeedbacks}
           trend="48 Submissions"
           color="accent"
+          onClick={() => setActiveModal('pulse')}
         />
         <StatCard 
           icon={<BarChart3 className="text-emerald-400 w-6 h-6" />}
@@ -102,25 +121,46 @@ const AdminDashboard = () => {
           value="4.8/5"
           trend="Elite Rating"
           color="emerald"
+          onClick={() => setActiveModal('satisfaction')}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Recent Events Table */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8" id="recent-activity">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="card p-0 overflow-hidden border-white/5"
           >
-            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
+            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/5 flex-wrap gap-4">
               <div className="flex items-center gap-3">
                  <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
                  <h2 className="text-xl font-black text-white">Recent Activity</h2>
               </div>
               <div className="flex items-center gap-2">
-                 <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"><Filter className="w-4 h-4" /></button>
-                 <button className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"><Search className="w-4 h-4" /></button>
+                 <AnimatePresence>
+                   {showSearch && (
+                     <motion.input
+                       initial={{ width: 0, opacity: 0 }}
+                       animate={{ width: 200, opacity: 1 }}
+                       exit={{ width: 0, opacity: 0 }}
+                       type="text"
+                       placeholder="Search events..."
+                       value={searchQuery}
+                       onChange={(e) => setSearchQuery(e.target.value)}
+                       className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-primary transition-all"
+                     />
+                   )}
+                 </AnimatePresence>
+                 <button onClick={() => {
+                    setSortOrder(prev => prev === "desc" ? "asc" : "desc");
+                    toast.success(`Sorted by date: ${sortOrder === "desc" ? "Oldest first" : "Newest first"}`);
+                 }} className={`p-2.5 rounded-xl transition-all ${sortOrder === "asc" ? "bg-white/20 text-white" : "bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"}`} title="Toggle Sort Order"><Filter className="w-4 h-4" /></button>
+                 <button onClick={() => {
+                    setShowSearch(!showSearch);
+                    if (showSearch) setSearchQuery("");
+                 }} className={`p-2.5 rounded-xl transition-all ${showSearch ? "bg-white/20 text-white" : "bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white"}`} title="Search"><Search className="w-4 h-4" /></button>
               </div>
             </div>
 
@@ -135,7 +175,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {events.map((event, index) => (
+                  {filteredEvents.length > 0 ? filteredEvents.map((event, index) => (
                     <motion.tr 
                       key={event.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -176,13 +216,19 @@ const AdminDashboard = () => {
                         </div>
                       </td>
                     </motion.tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan="4" className="px-8 py-12 text-center text-slate-500 font-medium">
+                        No events found matching your search.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
             
             <div className="p-6 bg-white/5 border-t border-white/5 flex justify-center">
-               <button className="text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
+               <button onClick={() => toast.success("Loading more events...")} className="text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
                  Load More Events <ChevronRight className="w-4 h-4" />
                </button>
             </div>
@@ -190,7 +236,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Quick Actions / Analytics Preview */}
-        <div className="lg:col-span-4 space-y-8">
+        <div className="lg:col-span-4 space-y-8" id="engagement-insights">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -207,10 +253,22 @@ const AdminDashboard = () => {
             </div>
 
             <div className="mt-14 space-y-3">
-              <button className="btn-primary w-full py-4 text-sm tracking-widest">
+              <button 
+                onClick={() => {
+                  if (events && events.length > 0) {
+                     window.location.href = `/admin/analytics/${events[0].id}`;
+                  } else {
+                     toast.error("No events to analyze yet.");
+                  }
+                }}
+                className="btn-primary w-full py-4 text-sm tracking-widest"
+              >
                 <BarChart3 className="w-5 h-5" /> Detailed Analytics
               </button>
-              <button className="btn-outline w-full py-4 text-sm tracking-widest border-white/5">
+              <button 
+                onClick={() => toast.success("Exporting engagement report as PDF...")}
+                className="btn-outline w-full py-4 text-sm tracking-widest border-white/5"
+              >
                 <Download className="w-5 h-5" /> Export Data
               </button>
             </div>
@@ -238,11 +296,18 @@ const AdminDashboard = () => {
           />
         )}
       </AnimatePresence>
+
+      <StatDetailModal 
+        isOpen={!!activeModal} 
+        onClose={() => setActiveModal(null)} 
+        type={activeModal} 
+        stats={stats} 
+      />
     </div>
   );
 };
 
-const StatCard = ({ icon, label, value, trend, color }) => {
+const StatCard = ({ icon, label, value, trend, color, onClick }) => {
   const colors = {
     primary: "text-primary bg-primary/10 border-primary/20",
     secondary: "text-secondary bg-secondary/10 border-secondary/20",
@@ -253,7 +318,8 @@ const StatCard = ({ icon, label, value, trend, color }) => {
   return (
     <motion.div 
       whileHover={{ y: -8 }}
-      className="card border-white/5 group relative overflow-hidden p-8"
+      onClick={onClick}
+      className={`card border-white/5 group relative overflow-hidden p-8 ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl -mr-12 -mt-12 opacity-0 group-hover:opacity-100 transition-all duration-700 ${colors[color].split(' ')[0].replace('text-', 'bg-')}`} />
       
