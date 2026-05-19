@@ -1,13 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createEvent } from "../../api/eventApi";
-import { Calendar, MapPin, Type, AlignLeft, Image as ImageIcon, Users, Save, X, Loader2, Banknote, Sparkles, ChevronLeft, Layout } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { createEvent, getEventById, updateEvent } from "../../api/eventApi";
+import { Calendar, MapPin, Type, AlignLeft, Image as ImageIcon, Users, Save, Loader2, Banknote, Sparkles, ChevronLeft, Layout } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BASE_URL } from "../../utils/constants";
 import toast from "react-hot-toast";
 
 const CreateEvent = () => {
+  const { id } = useParams();
+  const isEditMode = !!id;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEditMode);
   const [poster, setPoster] = useState(null);
   const [posterPreview, setPosterPreview] = useState(null);
   
@@ -20,6 +24,41 @@ const CreateEvent = () => {
     capacity: 100,
     price: 499
   });
+
+  useEffect(() => {
+    if (isEditMode) {
+      const fetchEventDetails = async () => {
+        try {
+          const data = await getEventById(id);
+          let formattedDate = "";
+          if (data.date) {
+            const dateObj = new Date(data.date);
+            const offset = dateObj.getTimezoneOffset();
+            const localDate = new Date(dateObj.getTime() - (offset * 60 * 1000));
+            formattedDate = localDate.toISOString().slice(0, 16);
+          }
+          setEventData({
+            title: data.title || "",
+            description: data.description || "",
+            location: data.location || "",
+            date: formattedDate,
+            category: data.category || "Technology",
+            capacity: data.capacity || 100,
+            price: data.price || 0
+          });
+          if (data.posterUrl) {
+            setPosterPreview(`${BASE_URL}${data.posterUrl}`);
+          }
+        } catch (error) {
+          toast.error("Failed to load event details");
+          navigate("/organizer/dashboard");
+        } finally {
+          setFetching(false);
+        }
+      };
+      fetchEventDetails();
+    }
+  }, [id, isEditMode, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -39,15 +78,32 @@ const CreateEvent = () => {
     setLoading(true);
 
     try {
-      await createEvent(eventData, poster);
-      toast.success("Event created successfully!");
+      if (isEditMode) {
+        await updateEvent(id, eventData, poster);
+        toast.success("Event updated successfully!");
+      } else {
+        await createEvent(eventData, poster);
+        toast.success("Event created successfully!");
+      }
       navigate("/organizer/dashboard");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to create event");
+      toast.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} event`);
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] -z-10 -translate-x-1/2 -translate-y-1/2" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Loading Experience Data...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -71,8 +127,8 @@ const CreateEvent = () => {
             <div className="flex items-center gap-3 text-primary font-black uppercase tracking-[0.2em] text-[10px] mb-3">
                <Layout className="w-3.5 h-3.5" /> Studio Mode
             </div>
-            <h1 className="text-5xl font-black text-white tracking-tighter">Create Experience</h1>
-            <p className="text-slate-500 mt-4 text-lg font-medium">Design and publish your next premium event pulse.</p>
+            <h1 className="text-5xl font-black text-white tracking-tighter">{isEditMode ? "Edit Experience" : "Create Experience"}</h1>
+            <p className="text-slate-500 mt-4 text-lg font-medium">{isEditMode ? "Modify and refine your existing event pulse." : "Design and publish your next premium event pulse."}</p>
           </div>
           
           <div className="hidden md:flex items-center gap-4 bg-white/5 p-4 rounded-3xl border border-white/5">
@@ -241,7 +297,7 @@ const CreateEvent = () => {
                 onClick={() => navigate("/organizer/dashboard")}
                 className="flex-1 btn-outline py-5 text-sm font-black tracking-widest border-white/5 bg-white/5"
               >
-                Discard Changes
+                Discard Changes.
               </button>
               <button 
                 type="submit"
@@ -250,11 +306,11 @@ const CreateEvent = () => {
               >
                 {loading ? (
                   <div className="flex items-center justify-center gap-3">
-                    <Loader2 className="w-5 h-5 animate-spin" /> Processing Experience...
+                    <Loader2 className="w-5 h-5 animate-spin" /> {isEditMode ? "Updating Experience..." : "Processing Experience..."}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-3">
-                    <Save className="w-5 h-5" /> Launch Event Pulse
+                    <Save className="w-5 h-5" /> {isEditMode ? "Save Changes" : "Launch Event Pulse"}
                   </div>
                 )}
               </button>

@@ -10,6 +10,11 @@ export const getEventById = async (id) => {
   return response.data;
 };
 
+export const getEventQr = async (id) => {
+  const response = await api.get(`/events/${id}/qr`);
+  return response.data;
+};
+
 export const createEvent = async (eventData, posterFile = null) => {
   const formData = new FormData();
   formData.append("event", new Blob([JSON.stringify(eventData)], { type: "application/json" }));
@@ -20,8 +25,13 @@ export const createEvent = async (eventData, posterFile = null) => {
   return response.data;
 };
 
-export const updateEvent = async (id, eventData) => {
-  const response = await api.put(`/events/${id}`, eventData);
+export const updateEvent = async (id, eventData, posterFile = null) => {
+  const formData = new FormData();
+  formData.append("event", new Blob([JSON.stringify(eventData)], { type: "application/json" }));
+  if (posterFile) {
+    formData.append("poster", posterFile);
+  }
+  const response = await api.put(`/events/${id}`, formData);
   return response.data;
 };
 

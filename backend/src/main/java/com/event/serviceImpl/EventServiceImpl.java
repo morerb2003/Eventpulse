@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -86,7 +87,7 @@ public class EventServiceImpl implements EventService {
         
         Event savedEvent = eventRepository.save(event);
         seatService.initializeSeats(savedEvent);
-        return mapToDto(savedEvent);
+        return mapToDto(savedEvent, false);
     }
 
     @Override
@@ -123,7 +124,7 @@ public class EventServiceImpl implements EventService {
         event.setStartTime(eventDto.getStartTime());
         
         Event updatedEvent = eventRepository.save(event);
-        return mapToDto(updatedEvent);
+        return mapToDto(updatedEvent, false);
     }
 
     @Override
@@ -140,7 +141,7 @@ public class EventServiceImpl implements EventService {
     public EventDto getEventById(Long id) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
-        return mapToDto(event);
+        return mapToDto(event, false);
     }
 
     @Override
@@ -151,7 +152,9 @@ public class EventServiceImpl implements EventService {
         Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
         Page<Event> eventsPage = eventRepository.findAll(pageable);
 
-        List<EventDto> content = eventsPage.getContent().stream().map(this::mapToDto).collect(Collectors.toList());
+        List<EventDto> content = eventsPage.getContent().stream()
+                .map(event -> mapToDto(event, false))
+                .collect(Collectors.toList());
 
         return PaginatedResponse.<EventDto>builder()
                 .content(content)
@@ -163,8 +166,36 @@ public class EventServiceImpl implements EventService {
                 .build();
     }
 
-    private EventDto mapToDto(Event event) {
-        return EventDto.builder()
+    @Override
+    public Map<String, String> getEventQrCode(Long id) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
+        event = ensureQrData(event);
+        return Map.of(
+                "eventTitle", event.getTitle(),
+                "qrCodeBase64", event.getQrCodeBase64() != null ? event.getQrCodeBase64() : ""
+        );
+    }
+
+    private Event ensureQrData(Event event) {
+        if (event.getQrToken() != null && !event.getQrToken().isBlank()
+                && event.getQrCodeBase64() != null && !event.getQrCodeBase64().isBlank()) {
+            return event;
+        }
+
+        String qrToken = event.getQrToken();
+        if (qrToken == null || qrToken.isBlank()) {
+            qrToken = qrCodeGenerator.generateToken();
+            event.setQrToken(qrToken);
+        }
+
+        String checkInUrl = frontendUrl + "/checkin/" + qrToken;
+        event.setQrCodeBase64(qrCodeGenerator.generateQRCodeBase64(checkInUrl));
+        return eventRepository.save(event);
+    }
+
+    private EventDto mapToDto(Event event, boolean includeQrData) {
+        EventDto.EventDtoBuilder builder = EventDto.builder()
                 .id(event.getId())
                 .title(event.getTitle())
                 .description(event.getDescription())
@@ -177,10 +208,14 @@ public class EventServiceImpl implements EventService {
                 .posterUrl(event.getPosterUrl())
                 .capacity(event.getCapacity())
                 .startTime(event.getStartTime())
-                .qrToken(event.getQrToken())
-                .qrCodeBase64(event.getQrCodeBase64())
                 .price(event.getPrice())
-                .availableSeats(event.getAvailableSeats())
-                .build();
+                .availableSeats(event.getAvailableSeats());
+
+        if (includeQrData) {
+            builder.qrToken(event.getQrToken());
+            builder.qrCodeBase64(event.getQrCodeBase64());
+        }
+
+        return builder.build();
     }
 }

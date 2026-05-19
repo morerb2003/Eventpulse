@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Star, Shield, Zap, Calendar, Users, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Zap, Calendar, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
 import { getAllEvents } from "../../api/eventApi";
 import EventCard from "../../components/event/EventCard";
 import { Loader2 } from "lucide-react";
@@ -10,20 +10,20 @@ const Home = () => {
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchFeaturedEvents();
-  }, []);
-
-  const fetchFeaturedEvents = async () => {
+  const fetchFeaturedEvents = useCallback(async () => {
     try {
       const data = await getAllEvents(0, 3);
       setFeaturedEvents(data.content);
-    } catch (error) {
+    } catch {
       console.error("Failed to load featured events");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchFeaturedEvents();
+  }, [fetchFeaturedEvents]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

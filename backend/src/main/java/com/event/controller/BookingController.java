@@ -1,11 +1,14 @@
 package com.event.controller;
 
 import com.event.entity.Booking;
+import com.event.entity.Role;
 import com.event.entity.Seat;
+import com.event.entity.User;
 import com.event.service.BookingService;
 import com.event.service.SeatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,10 +23,13 @@ public class BookingController {
     private final SeatService seatService;
 
     @PostMapping("/initiate")
-    public ResponseEntity<?> initiateBooking(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> initiateBooking(@RequestBody Map<String, Object> request,
+                                             @AuthenticationPrincipal User user) {
         try {
+            if (user == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Authentication required"));
+            }
             Long eventId = Long.parseLong(request.get("eventId").toString());
-            Long userId = Long.parseLong(request.get("userId").toString());
             Long seatId = Long.parseLong(request.get("seatId").toString());
             Object gatewayObj = request.get("gateway");
             if (gatewayObj == null) {
@@ -31,7 +37,7 @@ public class BookingController {
             }
             String gateway = gatewayObj.toString();
 
-            Booking booking = bookingService.initiateBooking(eventId, userId, seatId, gateway);
+            Booking booking = bookingService.initiateBooking(eventId, user.getId(), seatId, gateway);
             return ResponseEntity.ok(booking);
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,7 +61,14 @@ public class BookingController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Booking>> getUserBookings(@PathVariable Long userId) {
+    public ResponseEntity<?> getUserBookings(@PathVariable Long userId,
+                                             @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Authentication required"));
+        }
+        if (!user.getId().equals(userId) && user.getRole() != Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("message", "You can only view your own bookings"));
+        }
         return ResponseEntity.ok(bookingService.getUserBookings(userId));
     }
 

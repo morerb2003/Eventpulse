@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -31,27 +29,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> authenticate(@Valid @RequestBody AuthRequestDto request) {
         return ResponseEntity.ok(authService.authenticate(request));
-    }
-
-    @GetMapping("/verify")
-    public ResponseEntity<java.util.Map<String, String>> verifyEmail(@RequestParam String token) {
-        try {
-            authService.verifyEmail(token);
-            return ResponseEntity.ok(java.util.Map.of("message", "Email verified successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
-        }
-    }
-
-    @PostMapping("/resend-verification")
-    public ResponseEntity<java.util.Map<String, String>> resendVerification(@RequestBody java.util.Map<String, String> request) {
-        try {
-            String email = request.get("email");
-            authService.resendVerification(email);
-            return ResponseEntity.ok(java.util.Map.of("message", "Verification email sent"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
-        }
     }
 
     @PostMapping("/forgot-password")

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getAllEvents } from "../../api/eventApi";
 import EventCard from "../../components/event/EventCard";
-import { Search, SlidersHorizontal, Loader2, Calendar, Sparkles, Filter } from "lucide-react";
+import { Search, Calendar, Sparkles, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
@@ -13,20 +13,20 @@ const Events = () => {
 
   const categories = ["All", "Music", "Tech", "Business", "Entertainment", "Sports"];
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     try {
       const data = await getAllEvents();
       setEvents(data.content);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load events");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 
-export const useFetch = (apiFunc, params = []) => {
+const EMPTY_PARAMS = [];
+
+export const useFetch = (apiFunc, params = EMPTY_PARAMS) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const result = await apiFunc(...params);
@@ -18,11 +20,11 @@ export const useFetch = (apiFunc, params = []) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiFunc, params]);
 
   useEffect(() => {
     fetchData();
-  }, params);
+  }, [fetchData]);
 
   return { data, loading, error, refetch: fetchData };
 };

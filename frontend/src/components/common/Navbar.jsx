@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { LogOut, User, LayoutDashboard, Calendar, Home, Menu, X, ChevronRight } from "lucide-react";
+import { LogOut, LayoutDashboard, Calendar, Home, Menu, X, ChevronRight } from "lucide-react";
 import NotificationPanel from "../notifications/NotificationPanel";
 import { motion, AnimatePresence } from "framer-motion";
 

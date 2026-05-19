@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getUserFeedback } from "../../api/feedbackApi";
 import { useAuth } from "../../context/AuthContext";
-import { MessageSquare, Star, Calendar, ArrowRight, Loader2, User as UserIcon, Mail, Ticket, Award, Download, Settings, Bell, Lock, ChevronRight, TrendingUp } from "lucide-react";
+import { MessageSquare, Star, Calendar, ArrowRight, User as UserIcon, Mail, Award, Download, Settings, Bell, Lock, ChevronRight, TrendingUp } from "lucide-react";
 import { getUserBookings, downloadCertificate } from "../../api/bookingApi";
 import { TableSkeleton } from "../../components/common/Loader";
 import toast from "react-hot-toast";
@@ -14,14 +14,7 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feedback"); // feedback, bookings
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-    window.scrollTo(0, 0);
-  }, [user]);
- 
-   const fetchData = async () => {
+   const fetchData = useCallback(async () => {
      setLoading(true);
      try {
        const [fbData, bookingData] = await Promise.all([
@@ -30,12 +23,19 @@ const UserDashboard = () => {
        ]);
        setFeedbacks(fbData);
        setBookings(bookingData);
-     } catch (error) {
+     } catch {
        toast.error("Failed to load your activity");
      } finally {
        setLoading(false);
      }
-   };
+   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+    window.scrollTo(0, 0);
+  }, [user, fetchData]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -209,7 +209,7 @@ const UserDashboard = () => {
                           </div>
 
                           <button 
-                            onClick={() => downloadCertificate(booking.event.id, user.id)}
+                            onClick={() => downloadCertificate(booking.event.id)}
                             className="btn-primary py-4 px-8 w-full md:w-auto shadow-2xl shadow-primary/20"
                           >
                             <Download className="w-4 h-4" /> Download PDF

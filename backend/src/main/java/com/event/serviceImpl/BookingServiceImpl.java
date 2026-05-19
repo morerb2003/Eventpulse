@@ -83,21 +83,27 @@ public class BookingServiceImpl implements BookingService {
                 .user(user)
                 .seat(seat)
                 .amount(amount)
-                .paymentStatus("PENDING")
+                .paymentStatus(amount > 0 ? "PENDING" : "COMPLETED")
                 .bookingDate(LocalDateTime.now())
                 .build();
 
-        if ("RAZORPAY".equalsIgnoreCase(gateway)) {
-            Order order = paymentService.createRazorpayOrder(amount);
-            booking.setRazorpayOrderId(order.get("id"));
-        } else if ("STRIPE".equalsIgnoreCase(gateway)) {
-            Session session = paymentService.createStripeSession(booking, 
-                frontendUrl + "/payment-success", 
-                frontendUrl + "/payment-cancel");
-            booking.setStripeSessionId(session.getId());
+        if (amount > 0) {
+            if ("RAZORPAY".equalsIgnoreCase(gateway)) {
+                Order order = paymentService.createRazorpayOrder(amount);
+                booking.setRazorpayOrderId(order.get("id"));
+            } else if ("STRIPE".equalsIgnoreCase(gateway)) {
+                Session session = paymentService.createStripeSession(booking, 
+                    frontendUrl + "/payment-success", 
+                    frontendUrl + "/payment-cancel");
+                booking.setStripeSessionId(session.getId());
+            }
+            return bookingRepository.save(booking);
+        } else {
+            // For free events, finalize the booking immediately
+            booking.setPaymentId("FREE_" + System.currentTimeMillis());
+            booking = bookingRepository.save(booking);
+            return finalizeBooking(booking, booking.getPaymentId());
         }
-
-        return bookingRepository.save(booking);
     }
 
     @Override

@@ -57,17 +57,6 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendVerificationEmail(String to, String userName, String verificationLink) {
-        String subject = "Verify Your EventPulse Account";
-        String content = String.format("<p>Dear <strong>%s</strong>,</p>" +
-                "<p>Welcome to EventPulse! To complete your registration, please verify your email address.</p>" +
-                "<p><a href=\"%s\" style=\"display: inline-block; padding: 10px 20px; background-color: #0ea5e9; color: white; text-decoration: none; border-radius: 5px;\">Verify Email</a></p>" +
-                "<p style=\"color: #eab308; font-size: 0.9em;\">This link will expire in 15 minutes.</p>", 
-                userName, verificationLink);
-        sendHtmlMessage(to, subject, content, null);
-    }
-
-    @Override
     public void sendSimpleMessage(String to, String subject, String text) {
         sendHtmlMessage(to, subject, "<p>" + text.replace("\n", "<br>") + "</p>", null);
     }

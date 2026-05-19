@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getEventAnalytics } from "../../api/analyticsApi";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
 } from 'recharts';
-import { Loader2, TrendingUp, Users, MessageSquare, Star, Banknote, Ticket, ChevronLeft, BarChart3, Download, Share2, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, TrendingUp, MessageSquare, Star, Banknote, Ticket, ChevronLeft, BarChart3, Download, Share2, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
 const COLORS = ['#0ea5e9', '#6366f1', '#f43f5e', '#fbbf24', '#10b981'];
@@ -22,21 +22,21 @@ const Analytics = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAnalytics();
-    window.scrollTo(0, 0);
-  }, [eventId]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       const result = await getEventAnalytics(eventId);
       setData(result);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load analytics");
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
+
+  useEffect(() => {
+    fetchAnalytics();
+    window.scrollTo(0, 0);
+  }, [fetchAnalytics]);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-60">

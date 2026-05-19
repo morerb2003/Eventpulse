@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { getAllUsers, deleteUser, updateUserRole } from "../../api/userApi";
+import { getAllUsers, deleteUser } from "../../api/userApi";
 import { TableSkeleton } from "../../components/common/Loader";
-import { User, Shield, Trash2, Mail, MoreVertical, Search, CheckCircle, XCircle } from "lucide-react";
+import { User, Shield, Trash2, MoreVertical, Search, CheckCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
 const ManageUsers = () => {
@@ -18,7 +18,7 @@ const ManageUsers = () => {
       // Note: Backend endpoint /api/users needs to be implemented
       const data = await getAllUsers();
       setUsers(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load users. (Admin access required)");
     } finally {
       setLoading(false);
@@ -31,7 +31,7 @@ const ManageUsers = () => {
         await deleteUser(id);
         setUsers(users.filter(u => u.id !== id));
         toast.success("User deleted successfully");
-      } catch (error) {
+      } catch {
         toast.error("Failed to delete user");
       }
     }
@@ -105,7 +105,7 @@ const ManageUsers = () => {
                       </div>
                     </td>
                     <td className="py-5 text-sm text-slate-500">
-                      {new Date(user.createdAt || Date.now()).toLocaleDateString()}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                     </td>
                     <td className="py-5 text-right px-6">
                       <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

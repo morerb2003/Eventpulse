@@ -3,6 +3,7 @@ import MainLayout from "../layouts/MainLayout";
 import Home from "../pages/public/Home";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+
 import Events from "../pages/public/Events";
 import About from "../pages/public/About";
 import Contact from "../pages/public/Contact";
@@ -25,6 +26,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetails />} />
         <Route path="/about" element={<About />} />
@@ -41,6 +43,7 @@ const AppRoutes = () => {
         <Route element={<ProtectedRoute allowedRoles={[ROLES.ORGANIZER, ROLES.ADMIN]} />}>
           <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
           <Route path="/organizer/events/new" element={<CreateEvent />} />
+          <Route path="/organizer/events/edit/:id" element={<CreateEvent />} />
         </Route>
 
         {/* Shared Analytics Route */}

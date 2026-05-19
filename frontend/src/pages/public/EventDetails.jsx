@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getEventById } from "../../api/eventApi";
-import { Calendar, MapPin, Users, Clock, MessageSquare, ArrowLeft, Share2, ShieldCheck, Loader2, Ticket, Banknote, Sparkles, Tag } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, MessageSquare, ArrowLeft, ShieldCheck, Loader2, Ticket, Sparkles, Tag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
@@ -16,22 +16,22 @@ const EventDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchEvent();
-    window.scrollTo(0, 0);
-  }, [id]);
-
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     try {
       const data = await getEventById(id);
       setEvent(data);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load event details");
       navigate("/events");
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    fetchEvent();
+    window.scrollTo(0, 0);
+  }, [fetchEvent]);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40">

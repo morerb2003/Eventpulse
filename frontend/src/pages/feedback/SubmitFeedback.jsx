@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getEventById } from "../../api/eventApi";
 import { submitFeedback } from "../../api/feedbackApi";
@@ -20,21 +20,21 @@ const SubmitFeedback = () => {
     comments: ""
   });
 
-  useEffect(() => {
-    fetchEvent();
-  }, [eventId]);
-
-  const fetchEvent = async () => {
+  const fetchEvent = useCallback(async () => {
     try {
       const data = await getEventById(eventId);
       setEvent(data);
-    } catch (error) {
+    } catch {
       toast.error("Could not load event details");
       navigate("/events");
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId, navigate]);
+
+  useEffect(() => {
+    fetchEvent();
+  }, [fetchEvent]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,12 +52,11 @@ const SubmitFeedback = () => {
     try {
       await submitFeedback({
         ...feedback,
-        eventId: parseInt(eventId),
-        userId: user.id
+        eventId: parseInt(eventId)
       });
       toast.success("Thank you for your feedback!");
       navigate("/events");
-    } catch (error) {
+    } catch {
       toast.error("Failed to submit feedback");
     } finally {
       setIsSubmitting(false);

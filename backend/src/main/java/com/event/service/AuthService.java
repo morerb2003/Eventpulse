@@ -8,6 +8,4 @@ public interface AuthService {
     AuthResponseDto authenticate(AuthRequestDto request);
     void forgotPassword(String email);
     void resetPassword(String email, String otp, String newPassword);
-    void verifyEmail(String token);
-    void resendVerification(String email);
 }

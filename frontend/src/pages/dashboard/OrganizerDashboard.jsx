@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getAllEvents } from "../../api/eventApi";
+import { getAllEvents, deleteEvent } from "../../api/eventApi";
 import { getGlobalStats } from "../../api/analyticsApi";
 import { Calendar, Users, MessageSquare, Plus, QrCode, BarChart3, Search, Trash2, Edit, ChevronRight, Sparkles, TrendingUp, Filter, Download, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -13,6 +13,18 @@ const OrganizerDashboard = () => {
   const [stats, setStats] = useState({ totalEvents: 0, totalUsers: 0, totalFeedbacks: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedQR, setSelectedQR] = useState(null);
+
+  const handleDeleteEvent = async (id) => {
+    if (window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+      try {
+        await deleteEvent(id);
+        toast.success("Event deleted successfully!");
+        fetchData();
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Failed to delete event");
+      }
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -176,8 +188,8 @@ const OrganizerDashboard = () => {
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                           <Link title="Analytics" to={`/admin/analytics/${event.id}`} className="p-3 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"><BarChart3 className="w-5 h-5" /></Link>
-                          <button title="Edit" className="p-3 hover:text-secondary hover:bg-secondary/10 rounded-xl transition-all"><Edit className="w-5 h-5" /></button>
-                          <button title="Delete" className="p-3 hover:text-accent hover:bg-accent/10 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
+                          <Link title="Edit" to={`/organizer/events/edit/${event.id}`} className="p-3 hover:text-secondary hover:bg-secondary/10 rounded-xl transition-all"><Edit className="w-5 h-5" /></Link>
+                          <button title="Delete" onClick={() => handleDeleteEvent(event.id)} className="p-3 hover:text-accent hover:bg-accent/10 rounded-xl transition-all"><Trash2 className="w-5 h-5" /></button>
                         </div>
                       </td>
                     </motion.tr>

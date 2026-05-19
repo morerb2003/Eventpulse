@@ -19,13 +19,13 @@ public class AnalyticsController {
     }
 
     @GetMapping("/event/{eventId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<EventAnalyticsDto> getEventAnalytics(@PathVariable Long eventId) {
         return ResponseEntity.ok(analyticsService.getEventAnalytics(eventId));
     }
 
     @GetMapping("/global")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<Map<String, Object>> getGlobalStats() {
         return ResponseEntity.ok(analyticsService.getGlobalStats());
     }

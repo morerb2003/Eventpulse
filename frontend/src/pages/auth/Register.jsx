@@ -2,7 +2,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { register as registerApi } from "../../api/authApi";
-import { User, Mail, Lock, ArrowRight, Loader2, Calendar, ShieldCheck } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
 const Register = () => {
@@ -14,6 +15,7 @@ const Register = () => {
     role: "USER"
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -24,9 +26,24 @@ const Register = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await registerApi(formData);
-      toast.success("Account created successfully! Please login.");
-      navigate("/login");
+      const data = await registerApi(formData);
+      // Auto-login: store token and user from registration response
+      if (data.token && data.user) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success("Account created successfully! Welcome to EventPulse!");
+        if (data.user.role === "ADMIN") {
+          navigate("/admin/dashboard");
+        } else if (data.user.role === "ORGANIZER") {
+          navigate("/organizer/dashboard");
+        } else {
+          navigate("/user/dashboard");
+        }
+        window.location.reload();
+      } else {
+        toast.success("Account created successfully!");
+        navigate("/login");
+      }
     } catch (error) {
       toast.error(error.response?.data?.message || "Registration failed. Try again.");
     } finally {
@@ -143,7 +160,7 @@ const Register = () => {
                   onChange={handleChange}
                 >
                   <option value="USER">Attendee / Feedback Giver</option>
-                  <option value="ADMIN">Event Organizer</option>
+                  <option value="ORGANIZER">Event Organizer</option>
                 </select>
               </div>
 

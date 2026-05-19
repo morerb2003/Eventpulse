@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle, Loader2, Calendar, MapPin, User, Mail, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, Calendar, User, Mail, ClipboardCheck } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/api";
 import toast from "react-hot-toast";
@@ -16,26 +16,12 @@ const CheckIn = () => {
     const [guestEmail, setGuestEmail] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
 
-    useEffect(() => {
-        // First find the event by token
-        // Since we don't have a direct getByToken endpoint, we'll need to update the backend 
-        // or just try to check-in directly if we have a user.
-        // Actually, let's assume we need to identify the event first for UI purposes.
-        // For simplicity in this demo, I'll just attempt check-in if user is logged in.
-        if (user) {
-            handleCheckIn(user.id, null);
-        } else {
-            setStatus("identify");
-        }
-    }, [token, user]);
-
-    const handleCheckIn = async (userId, email) => {
+    const handleCheckIn = useCallback(async (email) => {
         setStatus("loading");
         try {
-            const response = await api.post(`/api/attendance/checkin-by-token`, null, {
+            const response = await api.post(`/attendance/checkin-by-token`, null, {
                 params: {
                     token: token,
-                    userId: userId,
                     guestEmail: email
                 }
             });
@@ -45,9 +31,18 @@ const CheckIn = () => {
             toast.success("Check-in successful!");
         } catch (error) {
             setStatus("error");
-            setErrorMessage(error.response?.data || "Check-in failed. Please try again.");
+            setErrorMessage(error.response?.data?.message || "Check-in failed. Please try again.");
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        // Logged-in attendees can check in directly; guests identify with an email first.
+        if (user) {
+            handleCheckIn(null);
+        } else {
+            setStatus("identify");
+        }
+    }, [user, handleCheckIn]);
 
     return (
         <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
@@ -96,7 +91,7 @@ const CheckIn = () => {
                                         />
                                     </div>
                                     <button 
-                                        onClick={() => handleCheckIn(null, guestEmail)}
+                                        onClick={() => handleCheckIn(guestEmail)}
                                         disabled={!guestEmail}
                                         className="btn-primary w-full py-3 disabled:opacity-50"
                                     >

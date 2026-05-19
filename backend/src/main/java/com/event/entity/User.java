@@ -40,14 +40,6 @@ public class User extends AuditEntity implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    @Builder.Default
-    private boolean emailVerified = false;
-
-    private String verificationToken;
-
-    private java.time.LocalDateTime tokenExpiry;
-
     @Override
     @com.fasterxml.jackson.annotation.JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -73,5 +65,5 @@ public class User extends AuditEntity implements UserDetails {
 
     @Override
     @com.fasterxml.jackson.annotation.JsonIgnore
-    public boolean isEnabled() { return true; } // Not tying strictly to emailVerified yet, will handle in AuthServiceImpl
+    public boolean isEnabled() { return true; }
 }

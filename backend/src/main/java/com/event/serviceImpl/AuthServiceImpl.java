@@ -43,30 +43,31 @@ public class AuthServiceImpl implements AuthService {
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists: " + request.getEmail());
         }
-        String token = java.util.UUID.randomUUID().toString();
         
+        Role role = request.getRole() == Role.ORGANIZER ? Role.ORGANIZER : Role.USER;
+
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : Role.USER)
-                .emailVerified(false)
-                .verificationToken(token)
-                .tokenExpiry(java.time.LocalDateTime.now().plusMinutes(15))
+                .role(role)
                 .build();
         repository.save(user);
         
+        // Send welcome email (non-blocking)
         try {
-            String verificationLink = "http://localhost:5173/verify?token=" + token; // Or better, fetch frontendUrl from props
-            emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), verificationLink);
+            emailService.sendRegistrationEmail(user.getEmail(), user.getFirstName());
         } catch (Exception e) {
-            System.err.println("Failed to send verification email: " + e.getMessage());
+            System.err.println("Failed to send welcome email: " + e.getMessage());
         }
         
-        // Don't generate JWT token and login right away, require verification
+        // Generate JWT token so user can login right away
+        String jwtToken = jwtUtil.generateToken(user);
         return AuthResponseDto.builder()
-                .message("Verification email sent")
+                .message("Registration successful")
+                .token(jwtToken)
+                .user(user)
                 .build();
     }
 
@@ -80,10 +81,6 @@ public class AuthServiceImpl implements AuthService {
         );
         User user = repository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-
-        if (!user.isEmailVerified()) {
-            throw new RuntimeException("Please verify your email first");
-        }
 
         String jwtToken = jwtUtil.generateToken(user);
         return AuthResponseDto.builder()
@@ -114,51 +111,5 @@ public class AuthServiceImpl implements AuthService {
         
         user.setPassword(passwordEncoder.encode(newPassword));
         repository.save(user);
-    }
-
-    public void verifyEmail(String token) {
-        User user = repository.findByVerificationToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
-
-        if (user.isEmailVerified()) {
-            throw new RuntimeException("Email is already verified");
-        }
-
-        if (user.getTokenExpiry().isBefore(java.time.LocalDateTime.now())) {
-            throw new RuntimeException("Verification token has expired");
-        }
-
-        user.setEmailVerified(true);
-        user.setVerificationToken(null);
-        user.setTokenExpiry(null);
-        repository.save(user);
-        
-        // Optional: send welcome/registration email after successful verification
-        try {
-            emailService.sendRegistrationEmail(user.getEmail(), user.getFirstName());
-        } catch (Exception e) {
-            System.err.println("Failed to send registration email: " + e.getMessage());
-        }
-    }
-
-    public void resendVerification(String email) {
-        User user = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (user.isEmailVerified()) {
-            throw new RuntimeException("Email is already verified");
-        }
-
-        String token = java.util.UUID.randomUUID().toString();
-        user.setVerificationToken(token);
-        user.setTokenExpiry(java.time.LocalDateTime.now().plusMinutes(15));
-        repository.save(user);
-
-        try {
-            String verificationLink = "http://localhost:5173/verify?token=" + token;
-            emailService.sendVerificationEmail(user.getEmail(), user.getFirstName(), verificationLink);
-        } catch (Exception e) {
-            System.err.println("Failed to resend verification email: " + e.getMessage());
-        }
     }
 }

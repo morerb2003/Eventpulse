@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, CreditCard, Ticket, AlertCircle, CheckCircle2, Loader2, Sparkles, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { X, CreditCard, Ticket, CheckCircle2, Sparkles, ChevronRight } from 'lucide-react';
 import SeatSelection from './SeatSelection';
 import api from '../../api/api';
 import toast from 'react-hot-toast';
@@ -12,22 +12,22 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
   const [loading, setLoading] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
 
+  const fetchSeats = useCallback(async () => {
+    try {
+      const response = await api.get(`/bookings/event/${event.id}/seats`);
+      setSeats(response.data);
+    } catch {
+      toast.error("Failed to load seats");
+    }
+  }, [event.id]);
+
   useEffect(() => {
     if (isOpen) {
       fetchSeats();
       setStep(1);
       setSelectedSeat(null);
     }
-  }, [isOpen, event.id]);
-
-  const fetchSeats = async () => {
-    try {
-      const response = await api.get(`/bookings/event/${event.id}/seats`);
-      setSeats(response.data);
-    } catch (error) {
-      toast.error("Failed to load seats");
-    }
-  };
+  }, [isOpen, fetchSeats]);
 
   const handleInitiateBooking = async (gateway) => {
     if (!selectedSeat) {
@@ -47,10 +47,16 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
       const booking = response.data;
       setBookingDetails(booking);
 
-      if (gateway === 'RAZORPAY') {
-        handleRazorpayPayment(booking);
+      if (booking.paymentStatus === 'COMPLETED') {
+        // Free event, skip payment processing
+        setStep(3);
+        toast.success("Seat booked successfully!");
       } else {
-        handleStripePayment(booking);
+        if (gateway === 'RAZORPAY') {
+          handleRazorpayPayment(booking);
+        } else {
+          handleStripePayment(booking);
+        }
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.response?.data || error.message || "Booking failed";
@@ -81,7 +87,7 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
             setStep(3);
             toast.success("Payment Successful!");
           }
-        } catch (error) {
+        } catch {
           toast.error("Payment verification failed");
         }
       },
@@ -114,7 +120,7 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
         setStep(3);
         toast.dismiss();
         toast.success("Payment Successful via Stripe!");
-      } catch (e) {
+      } catch {
         toast.dismiss();
         toast.error("Stripe payment failed");
       }

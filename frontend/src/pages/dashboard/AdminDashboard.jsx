@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAllEvents } from "../../api/eventApi";
 import { getGlobalStats } from "../../api/analyticsApi";
-import { Calendar, Users, MessageSquare, Plus, QrCode, BarChart3, Search, Trash2, Edit, ChevronRight, Sparkles, TrendingUp, Filter, Download, LayoutDashboard } from "lucide-react";
+import { Calendar, Users, MessageSquare, QrCode, BarChart3, Search, ChevronRight, Sparkles, TrendingUp, Filter, Download, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import QRModal from "../../components/event/QRModal";
 import NotificationPanel from "../../components/notifications/NotificationPanel";
@@ -11,7 +11,6 @@ import toast from "react-hot-toast";
 const AdminDashboard = () => {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({ totalEvents: 0, totalUsers: 0, totalFeedbacks: 0 });
-  const [loading, setLoading] = useState(true);
   const [selectedQR, setSelectedQR] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -22,10 +21,8 @@ const AdminDashboard = () => {
       ]);
       setEvents(eventsData.content);
       setStats(statsData);
-    } catch (error) {
+    } catch {
       toast.error("Failed to load dashboard data");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
