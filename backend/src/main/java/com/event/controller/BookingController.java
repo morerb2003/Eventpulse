@@ -76,4 +76,18 @@ public class BookingController {
     public ResponseEntity<List<Seat>> getEventSeats(@PathVariable Long eventId) {
         return ResponseEntity.ok(seatService.getSeatsByEvent(eventId));
     }
+
+    @PostMapping("/{id}/qr")
+    public ResponseEntity<?> saveQrCode(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        try {
+            String qrCodeBase64 = request.get("qrCode");
+            if (qrCodeBase64 == null || qrCodeBase64.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "QR Code content cannot be empty"));
+            }
+            Booking booking = bookingService.saveQrCode(id, qrCodeBase64);
+            return ResponseEntity.ok(booking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Failed to save QR Code"));
+        }
+    }
 }

@@ -12,6 +12,7 @@ import com.event.service.BookingService;
 import com.event.service.CertificateService;
 import com.event.service.EmailService;
 import com.event.service.PaymentService;
+import com.event.util.QRCodeGenerator;
 import com.razorpay.Order;
 import com.razorpay.RazorpayException;
 import com.stripe.exception.StripeException;
@@ -34,6 +35,7 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentService paymentService;
     private final EmailService emailService;
     private final CertificateService certificateService;
+    private final QRCodeGenerator qrCodeGenerator;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend-url}")
     private String frontendUrl;
@@ -128,6 +130,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private Booking finalizeBooking(Booking booking, String paymentId) {
+        if ("COMPLETED".equalsIgnoreCase(booking.getPaymentStatus()) && booking.getSeat().isBooked()) {
+            ensureCheckInTicket(booking);
+            return bookingRepository.save(booking);
+        }
+
         // Double check if seat is already booked by someone else who might have paid faster
         if (booking.getSeat().isBooked()) {
             booking.setPaymentStatus("FAILED");
@@ -148,10 +155,27 @@ public class BookingServiceImpl implements BookingService {
             eventRepository.save(event);
         }
 
+        ensureCheckInTicket(booking);
+        booking = bookingRepository.save(booking);
+        sendBookingConfirmation(booking);
+        return booking;
+    }
+
+    @Override
+    @Transactional
+    public Booking saveQrCode(Long bookingId, String qrCodeBase64) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        
+        booking.setQrCode(qrCodeBase64);
+        booking.setQrCodeImage(qrCodeBase64);
+        booking = bookingRepository.save(booking);
+
         try {
             byte[] pdfBytes = null;
             if (certificateService != null) {
                 User user = booking.getUser();
+                Event event = booking.getEvent();
                 java.io.ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
                 pdfBytes = bis.readAllBytes();
             }
@@ -159,14 +183,77 @@ public class BookingServiceImpl implements BookingService {
             emailService.sendEventNotification(
                 booking.getUser().getEmail(), 
                 booking.getUser().getFirstName(), 
-                event.getTitle(), 
-                event.getDate() != null ? event.getDate().toString() : "TBA",
-                pdfBytes
+                booking.getEvent().getTitle(), 
+                booking.getEvent().getDate() != null ? booking.getEvent().getDate().toString() : "TBA",
+                pdfBytes,
+                qrCodeBase64
             );
         } catch (Exception e) {
-            System.err.println("Failed to send event notification email: " + e.getMessage());
+            System.err.println("Failed to send event notification email with QR code: " + e.getMessage());
         }
 
+        return booking;
+    }
+
+    private void ensureCheckInTicket(Booking booking) {
+        if (booking.getCheckInToken() == null || booking.getCheckInToken().isBlank()) {
+            booking.setCheckInToken(generateUniqueCheckInToken());
+        }
+
+        if (booking.getQrCodeImage() == null || booking.getQrCodeImage().isBlank()) {
+            String qrCodeImage = qrCodeGenerator.generateQRCodeBase64(booking.getCheckInToken());
+            booking.setQrCodeImage(qrCodeImage);
+            booking.setQrCode(qrCodeImage);
+        }
+    }
+
+    private String generateUniqueCheckInToken() {
+        String token;
+        do {
+            token = qrCodeGenerator.generateToken();
+        } while (bookingRepository.existsByCheckInToken(token));
+        return token;
+    }
+
+    private void sendBookingConfirmation(Booking booking) {
+        try {
+            byte[] pdfBytes = null;
+            if (certificateService != null) {
+                User user = booking.getUser();
+                Event event = booking.getEvent();
+                java.io.ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
+                pdfBytes = bis.readAllBytes();
+            }
+
+            emailService.sendEventNotification(
+                booking.getUser().getEmail(),
+                booking.getUser().getFirstName(),
+                booking.getEvent().getTitle(),
+                booking.getEvent().getDate() != null ? booking.getEvent().getDate().toString() : "TBA",
+                pdfBytes,
+                booking.getQrCodeImage()
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send booking confirmation email with QR code: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Booking scanCheckIn(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!"COMPLETED".equalsIgnoreCase(booking.getPaymentStatus())) {
+            throw new RuntimeException("Cannot check in. Payment status is " + booking.getPaymentStatus());
+        }
+
+        if (booking.isCheckedIn()) {
+            throw new RuntimeException("Attendee is already checked in for this booking.");
+        }
+
+        booking.setCheckedIn(true);
+        booking.setCheckedInAt(LocalDateTime.now());
         return bookingRepository.save(booking);
     }
 

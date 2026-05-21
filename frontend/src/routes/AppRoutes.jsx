@@ -10,6 +10,7 @@ import Contact from "../pages/public/Contact";
 import EventDetails from "../pages/public/EventDetails";
 import SubmitFeedback from "../pages/feedback/SubmitFeedback";
 import CheckIn from "../pages/public/CheckIn";
+import CheckInScanner from "../pages/public/CheckInScanner";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 import AdminDashboard from "../pages/dashboard/AdminDashboard";
 import OrganizerDashboard from "../pages/dashboard/OrganizerDashboard";
@@ -44,6 +45,7 @@ const AppRoutes = () => {
           <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
           <Route path="/organizer/events/new" element={<CreateEvent />} />
           <Route path="/organizer/events/edit/:id" element={<CreateEvent />} />
+          <Route path="/checkin" element={<CheckInScanner />} />
         </Route>
 
         {/* Shared Analytics Route */}

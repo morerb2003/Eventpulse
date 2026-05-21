@@ -46,9 +46,9 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
                 // Public - File serving
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/files/view/**").permitAll()
-                // Public - Attendance check-in
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/attendance/*/checkin").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/attendance/checkin-by-token").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/checkin/scan").permitAll()
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )

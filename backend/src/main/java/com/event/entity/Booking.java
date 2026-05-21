@@ -45,4 +45,19 @@ public class Booking extends AuditEntity {
     private String stripeSessionId;
 
     private LocalDateTime bookingDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String qrCode;
+
+    @Column(unique = true)
+    private String checkInToken;
+
+    @Column(columnDefinition = "TEXT")
+    private String qrCodeImage;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean checkedIn = false;
+
+    private LocalDateTime checkedInAt;
 }

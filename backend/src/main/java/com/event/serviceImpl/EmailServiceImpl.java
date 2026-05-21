@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 
+import java.util.Base64;
+
 @Service
 @Async
 public class EmailServiceImpl implements EmailService {
@@ -37,12 +39,25 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendEventNotification(String to, String userName, String eventTitle, String eventDate, byte[] ticketPdf) {
+    public void sendEventNotification(String to, String userName, String eventTitle, String eventDate, byte[] ticketPdf, String qrCodeBase64) {
         String subject = "Booking Confirmation: " + eventTitle;
+        String qrImageHtml = "";
+        byte[] qrImageBytes = null;
+        if (qrCodeBase64 != null && !qrCodeBase64.isEmpty()) {
+            try {
+                qrImageBytes = decodeBase64Image(qrCodeBase64);
+                qrImageHtml = "<p><strong>Your Check-In QR Code:</strong></p>" +
+                    "<div style=\"text-align: center; margin: 20px 0;\">" +
+                    "  <img src=\"cid:bookingQrCode\" alt=\"QR Code Ticket\" style=\"width: 180px; height: 180px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;\" />" +
+                    "</div>";
+            } catch (IllegalArgumentException e) {
+                System.err.println("Failed to decode QR code image for email: " + e.getMessage());
+            }
+        }
         String content = String.format("<p>Dear <strong>%s</strong>,</p><p>Your booking for '<strong>%s</strong>' is confirmed.</p>" +
-                "<p><strong>Event Date:</strong> %s</p><p>Please find your digital ticket attached below.</p><p>We look forward to seeing you there!</p>", 
-                userName, eventTitle, eventDate);
-        sendHtmlMessage(to, subject, content, ticketPdf);
+                "<p><strong>Event Date:</strong> %s</p>%s<p>Please find your digital ticket attached below.</p><p>We look forward to seeing you there!</p>", 
+                userName, eventTitle, eventDate, qrImageHtml);
+        sendHtmlMessage(to, subject, content, ticketPdf, qrImageBytes, "bookingQrCode");
     }
 
     @Override
@@ -63,6 +78,11 @@ public class EmailServiceImpl implements EmailService {
 
     @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public void sendHtmlMessage(String to, String subject, String content, byte[] attachment) {
+        sendHtmlMessage(to, subject, content, attachment, null, null);
+    }
+
+    @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public void sendHtmlMessage(String to, String subject, String content, byte[] attachment, byte[] inlineImage, String inlineContentId) {
         try {
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -87,10 +107,27 @@ public class EmailServiceImpl implements EmailService {
             if (attachment != null) {
                 helper.addAttachment("Event_Ticket.pdf", new org.springframework.core.io.ByteArrayResource(attachment));
             }
+
+            if (inlineImage != null && inlineImage.length > 0 && inlineContentId != null) {
+                helper.addInline(
+                        inlineContentId,
+                        new org.springframework.core.io.ByteArrayResource(inlineImage),
+                        "image/png"
+                );
+            }
             
             emailSender.send(message);
         } catch (Exception e) {
             System.err.println("Failed to send email: " + e.getMessage());
         }
+    }
+
+    private byte[] decodeBase64Image(String imageData) {
+        String base64 = imageData;
+        int commaIndex = imageData.indexOf(',');
+        if (commaIndex >= 0) {
+            base64 = imageData.substring(commaIndex + 1);
+        }
+        return Base64.getDecoder().decode(base64);
     }
 }

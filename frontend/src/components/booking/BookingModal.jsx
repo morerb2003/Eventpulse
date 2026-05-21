@@ -11,6 +11,7 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [loading, setLoading] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
 
   const fetchSeats = useCallback(async () => {
     try {
@@ -26,8 +27,19 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
       fetchSeats();
       setStep(1);
       setSelectedSeat(null);
+      setQrCodeUrl(null);
     }
   }, [isOpen, fetchSeats]);
+
+  const downloadQrCode = () => {
+    if (!qrCodeUrl) return;
+    const link = document.createElement('a');
+    link.href = qrCodeUrl;
+    link.download = `EventPulse-Ticket-${bookingDetails?.id || 'booking'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleInitiateBooking = async (gateway) => {
     if (!selectedSeat) {
@@ -46,6 +58,7 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
 
       const booking = response.data;
       setBookingDetails(booking);
+      setQrCodeUrl(booking.qrCodeImage || booking.qrCode || null);
 
       if (booking.paymentStatus === 'COMPLETED') {
         // Free event, skip payment processing
@@ -84,6 +97,8 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
           });
           
           if (verifyRes.data.paymentStatus === 'COMPLETED') {
+            setBookingDetails(verifyRes.data);
+            setQrCodeUrl(verifyRes.data.qrCodeImage || verifyRes.data.qrCode || null);
             setStep(3);
             toast.success("Payment Successful!");
           }
@@ -112,11 +127,13 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
     toast.loading("Redirecting to Stripe...");
     setTimeout(async () => {
       try {
-        await api.post('/bookings/complete', {
+        const verifyRes = await api.post('/bookings/complete', {
           paymentId: "stripe_simulated_success",
           orderId: booking.stripeSessionId,
           gateway: 'STRIPE'
         });
+        setBookingDetails(verifyRes.data);
+        setQrCodeUrl(verifyRes.data.qrCodeImage || verifyRes.data.qrCode || null);
         setStep(3);
         toast.dismiss();
         toast.success("Payment Successful via Stripe!");
@@ -281,17 +298,37 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
                 </p>
               </div>
 
-              <div className="max-w-md mx-auto card bg-black/20 border-white/5 p-8 text-left space-y-6">
+              <div className="max-w-md mx-auto card bg-black/20 border-white/5 p-8 text-left space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="flex flex-col items-center justify-center pb-6 border-b border-white/5">
+                  {qrCodeUrl ? (
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="p-3 bg-white rounded-2xl border border-white/10 shadow-lg shadow-black/40">
+                        <img src={qrCodeUrl} alt="QR Code Ticket" className="w-[150px] h-[150px] object-contain" />
+                      </div>
+                      <button 
+                        onClick={downloadQrCode}
+                        className="text-xs text-primary hover:text-primary/80 font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+                      >
+                        <Ticket className="w-3.5 h-3.5" /> Download QR Ticket
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-[180px] h-[180px] bg-slate-800/30 rounded-2xl flex items-center justify-center border border-dashed border-white/10">
+                      <span className="text-[10px] text-slate-500 font-bold">QR Code Sent by Email</span>
+                    </div>
+                  )}
+                </div>
                 <ConfirmationRow label="Event Name" value={event.title} />
                 <ConfirmationRow label="Seat Position" value={`Row ${selectedSeat.rowLabel}, Seat ${selectedSeat.seatNumber}`} />
-                <ConfirmationRow label="Ref Number" value={bookingDetails?.paymentId || "PULSE_928374"} highlight />
+                <ConfirmationRow label="Ref Number" value={bookingDetails?.paymentId || "FREE_" + bookingDetails?.id} highlight />
               </div>
 
               <button 
                 onClick={onClose} 
                 className="btn-primary px-16 py-5 text-lg"
               >
-                View My Ticket
+                Close Window
               </button>
             </div>
           )}

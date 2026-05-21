@@ -10,4 +10,6 @@ public interface BookingService {
     Booking completeBooking(String paymentId, String orderId, String signature, String gateway);
     List<Booking> getUserBookings(Long userId);
     Booking getBookingById(Long id);
+    Booking saveQrCode(Long bookingId, String qrCodeBase64);
+    Booking scanCheckIn(Long bookingId);
 }
