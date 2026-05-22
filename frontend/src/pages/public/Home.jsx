@@ -4,16 +4,21 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Zap, Calendar, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
 import { getAllEvents } from "../../api/eventApi";
 import EventCard from "../../components/event/EventCard";
+import EventCalendar from "../../components/event/EventCalendar";
 import { Loader2 } from "lucide-react";
 
 const Home = () => {
   const [featuredEvents, setFeaturedEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFeaturedEvents = useCallback(async () => {
     try {
       const data = await getAllEvents(0, 3);
       setFeaturedEvents(data.content);
+      // Fetch a larger set for the calendar
+      const calData = await getAllEvents(0, 100);
+      setAllEvents(calData.content || []);
     } catch {
       console.error("Failed to load featured events");
     } finally {
@@ -109,6 +114,27 @@ const Home = () => {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Event Calendar Section */}
+      <section className="py-24 px-4 relative">
+        <div className="absolute inset-0 bg-slate-900/30 -z-10" />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+            <div>
+              <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs mb-4">
+                <Calendar className="w-4 h-4" /> Browse by Date
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Event Calendar</h2>
+              <p className="text-slate-500 mt-4 text-lg font-medium">Explore events chronologically and plan your schedule.</p>
+            </div>
+          </div>
+
+          <div className="card bg-surface/60 border-white/10 overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent" />
+            <EventCalendar events={allEvents} />
+          </div>
         </div>
       </section>
 

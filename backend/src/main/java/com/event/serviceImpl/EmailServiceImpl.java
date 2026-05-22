@@ -46,10 +46,11 @@ public class EmailServiceImpl implements EmailService {
         if (qrCodeBase64 != null && !qrCodeBase64.isEmpty()) {
             try {
                 qrImageBytes = decodeBase64Image(qrCodeBase64);
-                qrImageHtml = "<p><strong>Your Check-In QR Code:</strong></p>" +
+                qrImageHtml = "<p><strong>Your unique check-in QR code:</strong></p>" +
                     "<div style=\"text-align: center; margin: 20px 0;\">" +
                     "  <img src=\"cid:bookingQrCode\" alt=\"QR Code Ticket\" style=\"width: 180px; height: 180px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;\" />" +
-                    "</div>";
+                    "</div>" +
+                    "<p>Keep this QR code handy. An organizer will scan it at the venue to verify your ticket.</p>";
             } catch (IllegalArgumentException e) {
                 System.err.println("Failed to decode QR code image for email: " + e.getMessage());
             }
@@ -76,13 +77,29 @@ public class EmailServiceImpl implements EmailService {
         sendHtmlMessage(to, subject, "<p>" + text.replace("\n", "<br>") + "</p>", null);
     }
 
+    @Override
+    public void sendCertificateEmail(String to, String userName, String eventTitle, byte[] certificatePdf) {
+        String subject = "Your Certificate of Participation: " + eventTitle;
+        String content = String.format("<p>Dear <strong>%s</strong>,</p>" +
+                "<p>Thank you for attending '<strong>%s</strong>' and sharing your valuable feedback!</p>" +
+                "<p>We are pleased to present you with your official Certificate of Participation. Please find it attached to this email.</p>" +
+                "<p>Congratulations on your participation! We look forward to seeing you at future events.</p>", 
+                userName, eventTitle);
+        sendHtmlMessage(to, subject, content, certificatePdf, "Certificate.pdf", null, null);
+    }
+
     @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public void sendHtmlMessage(String to, String subject, String content, byte[] attachment) {
-        sendHtmlMessage(to, subject, content, attachment, null, null);
+        sendHtmlMessage(to, subject, content, attachment, "Attachment.pdf", null, null);
     }
 
     @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public void sendHtmlMessage(String to, String subject, String content, byte[] attachment, byte[] inlineImage, String inlineContentId) {
+        sendHtmlMessage(to, subject, content, attachment, "Event_Ticket.pdf", inlineImage, inlineContentId);
+    }
+
+    @Retryable(value = Exception.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public void sendHtmlMessage(String to, String subject, String content, byte[] attachment, String attachmentName, byte[] inlineImage, String inlineContentId) {
         try {
             MimeMessage message = emailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -105,7 +122,8 @@ public class EmailServiceImpl implements EmailService {
             helper.setText(htmlTemplate, true);
             
             if (attachment != null) {
-                helper.addAttachment("Event_Ticket.pdf", new org.springframework.core.io.ByteArrayResource(attachment));
+                String filename = attachmentName != null ? attachmentName : "Event_Ticket.pdf";
+                helper.addAttachment(filename, new org.springframework.core.io.ByteArrayResource(attachment));
             }
 
             if (inlineImage != null && inlineImage.length > 0 && inlineContentId != null) {

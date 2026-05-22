@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { getUserFeedback } from "../../api/feedbackApi";
 import { useAuth } from "../../context/AuthContext";
 import { MessageSquare, Star, Calendar, ArrowRight, User as UserIcon, Mail, Award, Download, Settings, Bell, Lock, ChevronRight, TrendingUp } from "lucide-react";
-import { getUserBookings, downloadCertificate } from "../../api/bookingApi";
+import { getUserBookings, downloadCertificate, emailCertificate } from "../../api/bookingApi";
 import { TableSkeleton } from "../../components/common/Loader";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,20 @@ const UserDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("feedback"); // feedback, bookings
+  const [emailingId, setEmailingId] = useState(null);
+
+  const handleEmailCertificate = async (eventId) => {
+    setEmailingId(eventId);
+    const toastId = toast.loading("Emailing your certificate...");
+    try {
+      await emailCertificate(eventId);
+      toast.success("Certificate sent to your inbox!", { id: toastId });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send email", { id: toastId });
+    } finally {
+      setEmailingId(null);
+    }
+  };
 
    const fetchData = useCallback(async () => {
      setLoading(true);
@@ -208,12 +222,21 @@ const UserDashboard = () => {
                             </div>
                           </div>
 
-                          <button 
-                            onClick={() => downloadCertificate(booking.event.id)}
-                            className="btn-primary py-4 px-8 w-full md:w-auto shadow-2xl shadow-primary/20"
-                          >
-                            <Download className="w-4 h-4" /> Download PDF
-                          </button>
+                          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            <button 
+                              onClick={() => downloadCertificate(booking.event.id)}
+                              className="btn-primary py-4 px-8 w-full sm:w-auto shadow-2xl shadow-primary/20 flex items-center justify-center gap-2"
+                            >
+                              <Download className="w-4 h-4" /> Download PDF
+                            </button>
+                            <button 
+                              onClick={() => handleEmailCertificate(booking.event.id)}
+                              disabled={emailingId === booking.event.id}
+                              className="btn-outline py-4 px-8 w-full sm:w-auto flex items-center justify-center gap-2 border-white/10 hover:bg-white/5 disabled:opacity-50 text-slate-300 hover:text-white"
+                            >
+                              <Mail className="w-4 h-4" /> Email PDF
+                            </button>
+                          </div>
                         </div>
                       ))
                     ) : (

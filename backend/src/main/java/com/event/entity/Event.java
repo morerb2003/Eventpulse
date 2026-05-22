@@ -54,4 +54,8 @@ public class Event extends AuditEntity {
     private Double price;
 
     private Integer availableSeats;
+    
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private java.util.List<Seat> seats;
 }

@@ -12,7 +12,10 @@ import com.event.service.BookingService;
 import com.event.service.CertificateService;
 import com.event.service.EmailService;
 import com.event.service.PaymentService;
+import com.event.service.TicketService;
 import com.event.util.QRCodeGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.razorpay.Order;
 import com.razorpay.RazorpayException;
 import com.stripe.exception.StripeException;
@@ -22,7 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -35,9 +40,11 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentService paymentService;
     private final EmailService emailService;
     private final CertificateService certificateService;
+    private final TicketService ticketService;
     private final QRCodeGenerator qrCodeGenerator;
+    private final ObjectMapper objectMapper;
 
-    @org.springframework.beans.factory.annotation.Value("${app.frontend-url}")
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
     @Override
@@ -173,10 +180,8 @@ public class BookingServiceImpl implements BookingService {
 
         try {
             byte[] pdfBytes = null;
-            if (certificateService != null) {
-                User user = booking.getUser();
-                Event event = booking.getEvent();
-                java.io.ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
+            if (ticketService != null) {
+                java.io.ByteArrayInputStream bis = ticketService.generateTicketPdf(booking);
                 pdfBytes = bis.readAllBytes();
             }
 
@@ -201,9 +206,26 @@ public class BookingServiceImpl implements BookingService {
         }
 
         if (booking.getQrCodeImage() == null || booking.getQrCodeImage().isBlank()) {
-            String qrCodeImage = qrCodeGenerator.generateQRCodeBase64(booking.getCheckInToken());
+            String qrCodeImage = qrCodeGenerator.generateQRCodeBase64(buildTicketPayload(booking));
             booking.setQrCodeImage(qrCodeImage);
             booking.setQrCode(qrCodeImage);
+        }
+    }
+
+    private String buildTicketPayload(Booking booking) {
+        try {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("type", "EVENTPULSE_TICKET");
+            if (booking.getId() != null) {
+                payload.put("bookingId", booking.getId());
+            }
+            if (booking.getEvent() != null && booking.getEvent().getId() != null) {
+                payload.put("eventId", booking.getEvent().getId());
+            }
+            payload.put("token", booking.getCheckInToken());
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to create ticket QR payload", e);
         }
     }
 
@@ -218,10 +240,8 @@ public class BookingServiceImpl implements BookingService {
     private void sendBookingConfirmation(Booking booking) {
         try {
             byte[] pdfBytes = null;
-            if (certificateService != null) {
-                User user = booking.getUser();
-                Event event = booking.getEvent();
-                java.io.ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
+            if (ticketService != null) {
+                java.io.ByteArrayInputStream bis = ticketService.generateTicketPdf(booking);
                 pdfBytes = bis.readAllBytes();
             }
 

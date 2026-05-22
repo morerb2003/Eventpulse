@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { LogOut, LayoutDashboard, Calendar, Home, Menu, X, ChevronRight } from "lucide-react";
+import { LogOut, LayoutDashboard, Calendar, Home, Menu, X, ChevronRight, ScanLine } from "lucide-react";
 import NotificationPanel from "../notifications/NotificationPanel";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isOrganizer } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -41,6 +41,14 @@ const Navbar = () => {
       path: dashboardPath, 
       icon: <LayoutDashboard className="w-4 h-4" /> 
     });
+
+    if (isOrganizer()) {
+      navLinks.push({
+        name: "Scanner",
+        path: "/checkin",
+        icon: <ScanLine className="w-4 h-4" />
+      });
+    }
   }
 
   return (

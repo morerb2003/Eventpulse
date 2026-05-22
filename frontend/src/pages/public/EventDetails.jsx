@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import BookingModal from "../../components/booking/BookingModal";
+import EventAgenda from "../../components/event/EventAgenda";
 import { BASE_URL } from "../../utils/constants";
 
 const EventDetails = () => {
@@ -130,6 +131,9 @@ const EventDetails = () => {
                   )) || "No description available for this event. Join us for an unforgettable experience."}
                 </div>
               </div>
+
+              {/* Multi-Session Agenda */}
+              <EventAgenda event={event} />
             </motion.div>
           </div>
 

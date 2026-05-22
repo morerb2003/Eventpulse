@@ -4,6 +4,7 @@ import com.event.entity.Booking;
 import com.event.service.CheckInService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -16,6 +17,7 @@ public class CheckinController {
     private final CheckInService checkInService;
 
     @PostMapping("/scan")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<?> scanCheckIn(
             @RequestParam(required = false) String token,
             @RequestBody(required = false) Map<String, Object> request
@@ -31,7 +33,7 @@ public class CheckinController {
             }
 
             Booking booking = checkInService.processCheckin(checkInToken);
-            String attendeeName = booking.getUser().getFirstName() + " " + booking.getUser().getLastName();
+            String attendeeName = (booking.getUser().getFirstName() + " " + booking.getUser().getLastName()).trim();
             
             return ResponseEntity.ok(Map.of(
                 "success", true,

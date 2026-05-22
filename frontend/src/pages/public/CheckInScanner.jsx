@@ -21,7 +21,6 @@ import toast from 'react-hot-toast';
 const CheckInScanner = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState("idle"); // idle, scanning, processing, success, error
-  const [processing, setProcessing] = useState(false);
   const [attendeeData, setAttendeeData] = useState(null);
   const [resultMsg, setResultMsg] = useState("");
   
@@ -29,6 +28,7 @@ const CheckInScanner = () => {
   const [showManual, setShowManual] = useState(false);
   
   const html5QrCodeRef = useRef(null);
+  const scanLockRef = useRef(false);
   const readerId = "reader";
 
   // Clean up scanner on unmount
@@ -42,26 +42,36 @@ const CheckInScanner = () => {
     };
   }, []);
 
-  const startScanner = async () => {
-    setStatus("scanning");
+  const startScanner = () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      toast.error("Camera scanning is not supported in this browser.");
+      return;
+    }
+    scanLockRef.current = false;
+    setResultMsg("");
     setShowManual(false);
-    
-    // Small delay to ensure the DOM element is rendered and ready
-    setTimeout(async () => {
+    // Setting status to "scanning" causes React to render the #reader div.
+    // The actual camera init happens in the useEffect below, after the DOM is committed.
+    setStatus("scanning");
+  };
+
+  // Start the camera only after the #reader div is guaranteed to be in the DOM
+  useEffect(() => {
+    if (status !== "scanning") return;
+
+    let html5QrCode;
+    const initScanner = async () => {
       try {
-        const html5QrCode = new Html5Qrcode(readerId);
+        html5QrCode = new Html5Qrcode(readerId);
         html5QrCodeRef.current = html5QrCode;
-        
+
         await html5QrCode.start(
           { facingMode: "environment" },
-          {
-            fps: 15,
-            qrbox: { width: 250, height: 250 }
-          },
+          { fps: 15, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
             handleScanSuccess(decodedText);
           },
-          (errorMessage) => {
+          () => {
             // Ignore normal scanner search noise
           }
         );
@@ -70,8 +80,18 @@ const CheckInScanner = () => {
         toast.error("Could not access camera. Please check permissions.");
         setStatus("idle");
       }
-    }, 300);
-  };
+    };
+
+    initScanner();
+
+    return () => {
+      // Cleanup when leaving scanning state
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().catch((e) => console.error("Error stopping scanner", e));
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   const stopScanner = async () => {
     if (html5QrCodeRef.current) {
@@ -86,6 +106,8 @@ const CheckInScanner = () => {
   };
 
   const handleScanSuccess = async (decodedText) => {
+    if (scanLockRef.current) return;
+    scanLockRef.current = true;
     await stopScanner();
     processCheckIn(decodedText);
   };
@@ -97,13 +119,13 @@ const CheckInScanner = () => {
     try {
       if (token.startsWith('{')) {
         const parsed = JSON.parse(token);
-        if (parsed.token || parsed.checkInToken) {
-          return parsed.token || parsed.checkInToken;
+        if (parsed.token || parsed.checkInToken || parsed.ticketToken || parsed.bookingToken) {
+          return parsed.token || parsed.checkInToken || parsed.ticketToken || parsed.bookingToken;
         }
       }
 
       const parsedUrl = new URL(token);
-      const queryToken = parsedUrl.searchParams.get("token");
+      const queryToken = parsedUrl.searchParams.get("token") || parsedUrl.searchParams.get("checkInToken");
       if (queryToken) {
         return queryToken;
       }
@@ -129,7 +151,6 @@ const CheckInScanner = () => {
       return;
     }
 
-    setProcessing(true);
     setStatus("processing");
     try {
       const response = await api.post('/checkin/scan', null, {
@@ -146,11 +167,15 @@ const CheckInScanner = () => {
         setStatus("error");
       }
     } catch (error) {
-      const errMsg = error.response?.data?.message || error.message || "Failed to process check-in";
+      const errMsg = error.response?.status === 403
+        ? "Only organizers and admins can scan tickets."
+        : error.response?.status === 401
+          ? "Please sign in as an organizer to scan tickets."
+          : error.response?.data?.message || error.message || "Failed to process check-in";
       setResultMsg(errMsg);
       setStatus("error");
     } finally {
-      setProcessing(false);
+      scanLockRef.current = false;
     }
   };
 
@@ -161,6 +186,7 @@ const CheckInScanner = () => {
   };
 
   const handleReset = () => {
+    scanLockRef.current = false;
     setAttendeeData(null);
     setResultMsg("");
     setManualToken("");
@@ -248,7 +274,7 @@ const CheckInScanner = () => {
                   >
                     <input 
                       type="text" 
-                      placeholder="Enter Check-In Token" 
+                      placeholder="Paste ticket token or QR payload" 
                       className="input-field flex-1"
                       value={manualToken}
                       onChange={(e) => setManualToken(e.target.value)}

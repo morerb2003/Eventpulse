@@ -220,11 +220,7 @@ const BookingModal = ({ event, isOpen, onClose, user }) => {
               </div>
 
               <div className="flex items-center justify-between gap-4 mt-8 pt-8 border-t border-white/5">
-                <div className="flex items-center gap-4 text-xs font-black text-slate-500 uppercase tracking-widest">
-                   <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-800" /> Available</div>
-                   <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary" /> Selected</div>
-                   <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-600 opacity-30" /> Occupied</div>
-                </div>
+                <div />
                 <div className="flex gap-4">
                   <button onClick={onClose} className="px-8 py-4 rounded-2xl font-black text-slate-500 hover:text-white transition-all uppercase tracking-widest text-xs">
                     Cancel

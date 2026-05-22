@@ -19,3 +19,9 @@ export const downloadCertificate = async (eventId) => {
     link.click();
     link.remove();
 };
+
+export const emailCertificate = async (eventId) => {
+    const response = await api.post(`/certificates/email/${eventId}`);
+    return response.data;
+};
+

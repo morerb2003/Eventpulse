@@ -8,6 +8,7 @@ import com.event.exception.ResourceNotFoundException;
 import com.event.repository.EventRepository;
 import com.event.repository.FeedbackRepository;
 import com.event.repository.UserRepository;
+import com.event.service.CertificateService;
 import com.event.service.EmailService;
 import com.event.service.FeedbackService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -24,6 +25,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final CertificateService certificateService;
     private final SimpMessagingTemplate messagingTemplate;
 
     // Production innovation: Spam Keywords
@@ -33,11 +35,13 @@ public class FeedbackServiceImpl implements FeedbackService {
                                EventRepository eventRepository, 
                                UserRepository userRepository,
                                EmailService emailService,
+                               CertificateService certificateService,
                                SimpMessagingTemplate messagingTemplate) {
         this.feedbackRepository = feedbackRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.certificateService = certificateService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -71,6 +75,16 @@ public class FeedbackServiceImpl implements FeedbackService {
         
         if (user != null) {
             emailService.sendFeedbackConfirmation(user.getEmail(), user.getFirstName(), event.getTitle());
+            
+            try {
+                if (certificateService != null) {
+                    java.io.ByteArrayInputStream bis = certificateService.generateCertificate(user, event);
+                    byte[] certBytes = bis.readAllBytes();
+                    emailService.sendCertificateEmail(user.getEmail(), user.getFirstName(), event.getTitle(), certBytes);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to automatically email certificate on feedback submission: " + e.getMessage());
+            }
         }
 
         // Real-time Notification
